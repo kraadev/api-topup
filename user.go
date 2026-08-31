@@ -371,6 +371,56 @@ func HandleListUsers(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// ============================================================
+// HELPER / SERVICE: OPERASI USER & SALDO
+// ============================================================
+
+// GetUserByID mengambil data user berdasarkan ID (thread-safe).
+func GetUserByID(id int) (User, bool) {
+	mu.RLock()
+	defer mu.RUnlock()
+	user, exists := users[id]
+	return user, exists
+}
+
+// GetBalance mengambil saldo user berdasarkan ID (thread-safe).
+func GetBalance(userID int) int64 {
+	mu.RLock()
+	defer mu.RUnlock()
+
+	user, exists := users[userID]
+	if !exists {
+		return 0
+	}
+
+	return user.Saldo
+}
+
+// DeductBalance memotong saldo user secara aman (thread-safe & atomic).
+// Error jika user tidak ditemukan, amount tidak valid, atau saldo tidak mencukupi.
+func DeductBalance(userID int, amount int64) (User, error) {
+	if amount <= 0 {
+		return User{}, fmt.Errorf("amount harus lebih besar dari 0")
+	}
+
+	mu.Lock()
+	defer mu.Unlock()
+
+	user, exists := users[userID]
+	if !exists {
+		return User{}, fmt.Errorf("user dengan id %d tidak ditemukan", userID)
+	}
+
+	if user.Saldo < amount {
+		return user, fmt.Errorf("saldo tidak mencukupi. Saldo saat ini: %d, dibutuhkan: %d", user.Saldo, amount)
+	}
+
+	user.Saldo -= amount
+	users[userID] = user
+
+	return user, nil
+}
+
 // RegisterUserRoutes adalah helper untuk mendaftarkan semua route User ke http.ServeMux.
 // Panggil fungsi ini dari main.go biar main.go tetap bersih.
 // Contoh pemakaian di main.go ada di komentar bawah.
@@ -395,6 +445,18 @@ func RegisterUserRoutes(mux *http.ServeMux) {
 			return
 		}
 		HandleListUsers(w, r)
+	})
+
+	// Fallback untuk route detail dengan format path /users/{id}
+	mux.HandleFunc("/users/", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			writeJSON(w, http.StatusMethodNotAllowed, response{
+				Success: false,
+				Message: "method tidak diizinkan, gunakan GET",
+			})
+			return
+		}
+		HandleGetUser(w, r)
 	})
 
 	// Untuk Go 1.22+ kamu juga bisa pakai pattern yang lebih eksplisit:
