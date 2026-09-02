@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useParams, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { orderService } from '../services/orderService';
@@ -15,6 +15,7 @@ import {
   IconSparkles,
   IconWallet,
   IconInfo,
+  IconRefresh,
 } from '../components/Icons';
 
 export const InvoicePage = () => {
@@ -32,6 +33,25 @@ export const InvoicePage = () => {
   const [error, setError] = useState(null);
   const [copiedField, setCopiedField] = useState(null);
   const [activeInstructionTab, setActiveInstructionTab] = useState(0);
+
+  // Progressive Verification Stages:
+  // 1 = 'CREATED' (Menunggu Bayar)
+  // 2 = 'PAYMENT_RECEIVED' (Pembayaran Diterima)
+  // 3 = 'PROCESSING' (Sedang Diproses Otomatis ke Server Game)
+  // 4 = 'COMPLETED' (Selesai Sukses)
+  const isInitialSuccess = initialOrder?.status === 'Success' || initialOrder?.status === 'SUCCESS' || initialPaymentMethod?.isWallet;
+  const [stage, setStage] = useState(isInitialSuccess ? 4 : 1);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [verifyingText, setVerifyingText] = useState('');
+
+  const timersRef = useRef([]);
+
+  // Clear timers on unmount
+  useEffect(() => {
+    return () => {
+      timersRef.current.forEach((t) => clearTimeout(t));
+    };
+  }, []);
 
   // Generate detail pembayaran VA / QRIS jika non-wallet
   const paymentDetails = generatePaymentDetails(
@@ -51,7 +71,9 @@ export const InvoicePage = () => {
           const data = res.data || res;
           if (data && data.id) {
             setOrder(data);
+            const isFinished = data.status === 'Success' || data.status === 'SUCCESS';
             setOrderStatus(data.status || 'Success');
+            if (isFinished) setStage(4);
           } else {
             // Coba ambil dari list orders
             const listRes = await orderService.getOrders();
@@ -59,9 +81,10 @@ export const InvoicePage = () => {
             const found = list.find((o) => o.id.toString() === orderId.toString());
             if (found) {
               setOrder(found);
+              const isFinished = found.status === 'Success' || found.status === 'SUCCESS';
               setOrderStatus(found.status || 'Success');
+              if (isFinished) setStage(4);
             } else {
-              // Fallback dummy order jika order baru dibuat di frontend
               setOrder({
                 id: orderId,
                 user_id: 1,
@@ -70,10 +93,10 @@ export const InvoicePage = () => {
                 status: 'Pending',
                 created_at: new Date().toISOString(),
               });
+              setStage(1);
             }
           }
         } catch (err) {
-          // Tetap tampilkan invoice jika id valid
           setOrder({
             id: orderId,
             user_id: 1,
@@ -82,6 +105,7 @@ export const InvoicePage = () => {
             status: 'Pending',
             created_at: new Date().toISOString(),
           });
+          setStage(1);
         } finally {
           setLoading(false);
         }
@@ -96,17 +120,49 @@ export const InvoicePage = () => {
     setTimeout(() => setCopiedField(null), 2000);
   };
 
+  // Alur Realistis Bertahap: Klik Bayar -> Pembayaran Diterima (1.8s) -> Diproses Otomatis (2.2s) -> Selesai
   const handleConfirmPaid = async () => {
-    setOrderStatus('Success');
-    if (order?.isDeposit || order?.depositAmount || (order?.id && order.id.toString().startsWith('DEP'))) {
-      const amountToAdd = order.depositAmount || order.harga;
-      try {
-        await topUpSaldo(amountToAdd);
-        await refreshUser();
-      } catch (err) {
-        console.warn('Deposit balance credit notice:', err.message);
-      }
-    }
+    if (isVerifying || stage === 4) return;
+
+    setIsVerifying(true);
+    setVerifyingText('Memverifikasi mutasi pembayaran...');
+
+    // Jeda 1: Menuju Stage 2 (Pembayaran Diterima)
+    const t1 = setTimeout(() => {
+      setStage(2);
+      setVerifyingText('Pembayaran Terverifikasi! Menghubungkan ke Gateway Game...');
+
+      // Jeda 2: Menuju Stage 3 (Diproses Otomatis)
+      const t2 = setTimeout(() => {
+        setStage(3);
+        setVerifyingText('Mengirimkan Item Digital ke Akun Game (1-3 Detik)...');
+
+        // Jeda 3: Menuju Stage 4 (Selesai Sukses)
+        const t3 = setTimeout(async () => {
+          setStage(4);
+          setOrderStatus('Success');
+          setIsVerifying(false);
+          setVerifyingText('');
+
+          // Jika ini transaksi deposit dompet, tambahkan saldo
+          if (order?.isDeposit || order?.depositAmount || (order?.id && order.id.toString().startsWith('DEP'))) {
+            const amountToAdd = order.depositAmount || order.harga;
+            try {
+              await topUpSaldo(amountToAdd);
+              await refreshUser();
+            } catch (err) {
+              console.warn('Deposit balance credit notice:', err.message);
+            }
+          }
+        }, 2200);
+
+        timersRef.current.push(t3);
+      }, 2000);
+
+      timersRef.current.push(t2);
+    }, 1500);
+
+    timersRef.current.push(t1);
   };
 
   const handlePrint = () => {
@@ -140,16 +196,16 @@ export const InvoicePage = () => {
     );
   }
 
-  const isPending = orderStatus === 'Pending' || orderStatus === 'PENDING';
+  const isPending = stage < 4;
 
   return (
     <div className="invoice-page">
       <div className="invoice-card">
-        {/* Status Header */}
+        {/* Status Header Dinamis Sesuai Tahapan */}
         <div className="invoice-header">
-          {isPending ? (
+          {stage === 1 && (
             <>
-              <div className="status-icon-box warning">
+              <div className="status-icon-box warning pulse-dot">
                 <IconQrCode size={36} />
               </div>
               <span className="invoice-status-pill warning">MENUNGGU PEMBAYARAN</span>
@@ -158,22 +214,51 @@ export const InvoicePage = () => {
                 Lakukan transfer pembayaran sesuai detail rekening / QRIS di bawah sebelum batas waktu berakhir.
               </p>
             </>
-          ) : (
+          )}
+
+          {stage === 2 && (
+            <>
+              <div className="status-icon-box warning pulse-dot">
+                <IconCheck size={36} />
+              </div>
+              <span className="invoice-status-pill success">PEMBAYARAN DITERIMA</span>
+              <h1 className="invoice-status-title">Memverifikasi Mutasi...</h1>
+              <p className="invoice-status-desc">
+                Sistem berhasil mendeteksi mutasi pembayaran. Sedang menyiapkan transmisi pengiriman produk.
+              </p>
+            </>
+          )}
+
+          {stage === 3 && (
+            <>
+              <div className="status-icon-box success pulse-dot">
+                <IconRefresh size={36} className="spin-slow" />
+              </div>
+              <span className="invoice-status-pill success">DIPROSES OTOMATIS</span>
+              <h1 className="invoice-status-title">Mengirim Item Game...</h1>
+              <p className="invoice-status-desc">
+                Sistem sedang melakukan injeksi saldo / diamond langsung ke akun tujuan secara instan 1-3 detik.
+              </p>
+            </>
+          )}
+
+          {stage === 4 && (
             <>
               <div className="status-icon-box success">
                 <IconCheck size={36} />
               </div>
-              <span className="invoice-status-pill success">TRANSAKSI BERHASIL</span>
-              <h1 className="invoice-status-title">Pesanan Selesai</h1>
+              <span className="invoice-status-pill success">TRANSAKSI BERHASIL & SELESAI</span>
+              <h1 className="invoice-status-title">Pesanan Sukses Dikirim!</h1>
               <p className="invoice-status-desc">
-                Pembayaran telah diterima dan item produk game telah sukses dikirimkan ke akun Anda.
+                Pembayaran telah terverifikasi penuh dan produk digital telah sukses masuk ke akun game Anda.
               </p>
             </>
           )}
         </div>
 
-        {/* 4-Stage Transaction Timeline */}
+        {/* 4-Stage Interactive Transaction Timeline */}
         <div className="timeline-container">
+          {/* Step 1: Pesanan Dibuat */}
           <div className="timeline-step completed">
             <div className="timeline-dot">
               <IconCheck size={12} />
@@ -181,36 +266,51 @@ export const InvoicePage = () => {
             <span className="timeline-label">Pesanan Dibuat</span>
           </div>
 
-          <div className={`timeline-line ${!isPending ? 'completed' : ''}`} />
+          <div className={`timeline-line ${stage >= 2 ? 'completed' : ''}`} />
 
-          <div className={`timeline-step ${!isPending ? 'completed' : 'active'}`}>
-            <div className={`timeline-dot ${isPending ? 'pulse-dot' : ''}`}>
-              {isPending ? '2' : <IconCheck size={12} />}
+          {/* Step 2: Menunggu Bayar / Pembayaran Diterima */}
+          <div className={`timeline-step ${stage >= 2 ? 'completed' : 'active'}`}>
+            <div className={`timeline-dot ${stage === 1 ? 'pulse-dot' : ''}`}>
+              {stage >= 2 ? <IconCheck size={12} /> : '2'}
             </div>
-            <span className="timeline-label">{isPending ? 'Menunggu Bayar' : 'Pembayaran Diterima'}</span>
+            <span className="timeline-label">
+              {stage === 1 ? 'Menunggu Bayar' : 'Pembayaran Diterima'}
+            </span>
           </div>
 
-          <div className={`timeline-line ${!isPending ? 'completed' : ''}`} />
+          <div className={`timeline-line ${stage >= 3 ? 'completed' : ''}`} />
 
-          <div className={`timeline-step ${!isPending ? 'completed' : ''}`}>
-            <div className="timeline-dot">
-              {!isPending ? <IconCheck size={12} /> : '3'}
+          {/* Step 3: Diproses Otomatis */}
+          <div className={`timeline-step ${stage >= 3 ? 'completed' : (stage === 2 ? 'active' : '')}`}>
+            <div className={`timeline-dot ${stage === 3 ? 'pulse-dot' : ''}`}>
+              {stage >= 4 ? <IconCheck size={12} /> : (stage === 3 ? <IconRefresh size={11} className="spin-slow" /> : '3')}
             </div>
             <span className="timeline-label">Diproses Otomatis</span>
           </div>
 
-          <div className={`timeline-line ${!isPending ? 'completed' : ''}`} />
+          <div className={`timeline-line ${stage >= 4 ? 'completed' : ''}`} />
 
-          <div className={`timeline-step ${!isPending ? 'completed' : ''}`}>
+          {/* Step 4: Selesai */}
+          <div className={`timeline-step ${stage === 4 ? 'completed' : ''}`}>
             <div className="timeline-dot">
-              {!isPending ? <IconCheck size={12} /> : '4'}
+              {stage === 4 ? <IconCheck size={12} /> : '4'}
             </div>
             <span className="timeline-label">Selesai</span>
           </div>
         </div>
 
-        {/* SECTION PEMBAYARAN JIKA MASIH PENDING (VA / QRIS) */}
-        {isPending && (
+        {/* Live Processing Animation Banner if Verifying */}
+        {isVerifying && stage < 4 && (
+          <div className="processing-banner-box">
+            <IconRefresh size={18} className="text-emerald spin-slow" />
+            <div className="processing-banner-text">
+              <strong>Status Realtime:</strong> {verifyingText}
+            </div>
+          </div>
+        )}
+
+        {/* SECTION PEMBAYARAN JIKA MASIH STAGE 1 (VA / QRIS) */}
+        {stage === 1 && (
           <div className="payment-action-box">
             {/* 1. TAMPILAN VIRTUAL ACCOUNT (BCA VA, MANDIRI VA, BRI, BNI) */}
             {paymentDetails.type === 'VA' && (
@@ -330,9 +430,10 @@ export const InvoicePage = () => {
                 type="button"
                 onClick={handleConfirmPaid}
                 className="btn-solid btn-paid-confirm"
+                disabled={isVerifying}
               >
                 <IconCheck size={18} />
-                <span>Saya Sudah Bayar / Konfirmasi Pembayaran</span>
+                <span>{isVerifying ? 'Memverifikasi Pembayaran...' : 'Saya Sudah Bayar / Konfirmasi Pembayaran'}</span>
               </button>
             </div>
           </div>
@@ -379,7 +480,7 @@ export const InvoicePage = () => {
             <div className="receipt-row">
               <span className="receipt-col-label">Status Pengiriman</span>
               <span className="receipt-col-val text-emerald">
-                {isPending ? 'Menunggu Konfirmasi Transfer' : 'Instan 1-3 Detik Langsung Aktif'}
+                {stage === 4 ? 'Instan 1-3 Detik Langsung Masuk (Sukses)' : (stage === 3 ? 'Sedang Injeksi ke Server...' : 'Menunggu Konfirmasi Transfer')}
               </span>
             </div>
 
