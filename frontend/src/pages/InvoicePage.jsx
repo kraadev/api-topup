@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, Link, useLocation } from 'react-router-dom';
 import { orderService } from '../services/orderService';
 import { formatRupiah, formatDate } from '../utils/formatters';
-import { IconCheck, IconAlert, IconHistory, IconArrowRight, IconShield } from '../components/Icons';
+import { IconCheck, IconAlert, IconHistory, IconArrowRight, IconShield, IconCopy, IconQrCode } from '../components/Icons';
 
 export const InvoicePage = () => {
   const { orderId } = useParams();
@@ -19,7 +19,20 @@ export const InvoicePage = () => {
         setError(null);
         try {
           const res = await orderService.getOrderById(orderId);
-          setOrder(res.data || res);
+          const data = res.data || res;
+          if (data && data.id) {
+            setOrder(data);
+          } else {
+            // Coba ambil dari list orders
+            const listRes = await orderService.getOrders();
+            const list = Array.isArray(listRes.data) ? listRes.data : (Array.isArray(listRes) ? listRes : []);
+            const found = list.find((o) => o.id.toString() === orderId.toString());
+            if (found) {
+              setOrder(found);
+            } else {
+              setError('Nomor order transaksi tidak ditemukan.');
+            }
+          }
         } catch (err) {
           setError(err.message || 'Gagal memuat detail transaksi.');
         } finally {
@@ -58,7 +71,7 @@ export const InvoicePage = () => {
             <IconAlert size={32} />
           </div>
           <h2 className="invoice-status-title">Transaksi Tidak Ditemukan</h2>
-          <p className="invoice-status-desc">{error || 'Nomor order transaksi ini tidak terdaftar di sistem.'}</p>
+          <p className="invoice-status-desc">{error || 'Nomor invoice transaksi ini tidak terdaftar di sistem kami.'}</p>
           <div style={{ marginTop: '1.5rem' }}>
             <Link to="/transaksi" className="btn-solid" style={{ display: 'inline-flex', width: 'auto' }}>
               Lihat Riwayat Transaksi
@@ -80,8 +93,45 @@ export const InvoicePage = () => {
           <span className="invoice-status-pill success">TRANSAKSI BERHASIL</span>
           <h1 className="invoice-status-title">Pesanan Selesai</h1>
           <p className="invoice-status-desc">
-            Transaksi top-up produk digital telah sukses dieksekusi dan saldo akun telah dipotong.
+            Transaksi top-up produk digital telah sukses dieksekusi secara otomatis ke akun Anda.
           </p>
+        </div>
+
+        {/* 4-Stage Transaction Timeline */}
+        <div className="timeline-container">
+          <div className="timeline-step completed">
+            <div className="timeline-dot">
+              <IconCheck size={12} />
+            </div>
+            <span className="timeline-label">Pesanan Dibuat</span>
+          </div>
+
+          <div className="timeline-line completed" />
+
+          <div className="timeline-step completed">
+            <div className="timeline-dot">
+              <IconCheck size={12} />
+            </div>
+            <span className="timeline-label">Pembayaran Diterima</span>
+          </div>
+
+          <div className="timeline-line completed" />
+
+          <div className="timeline-step completed">
+            <div className="timeline-dot">
+              <IconCheck size={12} />
+            </div>
+            <span className="timeline-label">Diproses Otomatis</span>
+          </div>
+
+          <div className="timeline-line completed" />
+
+          <div className="timeline-step completed">
+            <div className="timeline-dot">
+              <IconCheck size={12} />
+            </div>
+            <span className="timeline-label">Selesai (Success)</span>
+          </div>
         </div>
 
         {/* Invoice Meta Bar */}
@@ -102,29 +152,24 @@ export const InvoicePage = () => {
           </div>
 
           <div className="meta-col">
-            <span className="meta-label">Status Sistem</span>
-            <span className="meta-val text-emerald">SUKSES (100% Selesai)</span>
+            <span className="meta-label">Metode Pembayaran</span>
+            <span className="meta-val text-emerald">Saldo Dompet Triple S</span>
           </div>
         </div>
 
         {/* Detailed Receipt Breakdown */}
         <div className="receipt-breakdown">
-          <h3 className="breakdown-title">Rincian Pembelian</h3>
+          <h3 className="breakdown-title">Rincian Pembelian Produk</h3>
 
           <div className="receipt-table">
             <div className="receipt-row">
-              <span className="receipt-col-label">Item Produk</span>
+              <span className="receipt-col-label">Item Produk & Akun</span>
               <span className="receipt-col-val font-semibold">{order.item}</span>
             </div>
 
             <div className="receipt-row">
               <span className="receipt-col-label">User ID Pembeli</span>
               <span className="receipt-col-val mono">UID #{order.user_id}</span>
-            </div>
-
-            <div className="receipt-row">
-              <span className="receipt-col-label">Metode Pembayaran</span>
-              <span className="receipt-col-val">Saldo Dompet Akun Triple S</span>
             </div>
 
             <div className="receipt-row">
@@ -135,7 +180,7 @@ export const InvoicePage = () => {
             <div className="receipt-divider" />
 
             <div className="receipt-row total">
-              <span className="receipt-col-label">Total Nominal</span>
+              <span className="receipt-col-label">Total Pembayaran</span>
               <span className="receipt-col-val total-amount">{formatRupiah(order.harga)}</span>
             </div>
           </div>
@@ -144,13 +189,13 @@ export const InvoicePage = () => {
         {/* Security / Verification Assurance */}
         <div className="invoice-security-notice">
           <IconShield size={16} className="text-emerald" />
-          <span>Transaksi ini diproses melalui PostgreSQL Atomic Transaction yang terjamin keamanannya.</span>
+          <span>Transaksi ini diproses melalui PostgreSQL Atomic Transaction yang aman dan terenkripsi.</span>
         </div>
 
-        {/* Actions */}
+        {/* Actions Row */}
         <div className="invoice-actions-row">
           <button type="button" onClick={handlePrint} className="btn-secondary-flat">
-            Cetak Bukti Struk
+            Cetak Struk Transaksi
           </button>
           <Link to="/" className="btn-solid" style={{ width: 'auto', minWidth: '160px' }}>
             <span>Beli Game Lain</span>
