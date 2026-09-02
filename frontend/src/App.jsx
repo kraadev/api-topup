@@ -1,31 +1,30 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { UserProfile } from './components/UserProfile';
-import { OrderForm } from './components/OrderForm';
-import { OrderHistory } from './components/OrderHistory';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { Navbar } from './components/Navbar';
+import { Footer } from './components/Footer';
+import { TopUpModal } from './components/TopUpModal';
+import { HomePage } from './pages/HomePage';
+import { GameDetailPage } from './pages/GameDetailPage';
+import { InvoicePage } from './pages/InvoicePage';
+import { OrderHistoryPage } from './pages/OrderHistoryPage';
 import { userService } from './services/userService';
 import { orderService } from './services/orderService';
-import { formatRupiah } from './utils/formatters';
-import { IconCheck, IconAlert } from './components/Icons';
-import logoImg from './assets/logo.png';
 import './index.css';
 
 export default function App() {
   const [user, setUser] = useState(null);
   const [loadingUser, setLoadingUser] = useState(true);
-  const [userError, setUserError] = useState(null);
-  const [feedback, setFeedback] = useState(null);
-  const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
+  const [isTopUpModalOpen, setIsTopUpModalOpen] = useState(false);
 
   // Ambil data user dari backend Golang (default ID 1)
   const fetchUserData = useCallback(async () => {
     setLoadingUser(true);
-    setUserError(null);
     try {
       const response = await userService.getUserById(1);
       const userData = response.data || response;
       setUser(userData);
     } catch (err) {
-      setUserError('Koneksi ke backend belum aktif. Menggunakan state lokal.');
+      console.warn('Backend belum terkoneksi, menggunakan state lokal:', err.message);
       setUser((prev) => prev || { id: 1, username: 'player_one', saldo: 100000 });
     } finally {
       setLoadingUser(false);
@@ -36,7 +35,7 @@ export default function App() {
     fetchUserData();
   }, [fetchUserData]);
 
-  // Handler Top Up Saldo
+  // Handler Top Up Saldo Dompet
   const handleTopUp = async (amount) => {
     try {
       await userService.topUpSaldo(user?.id || 1, amount);
@@ -52,12 +51,12 @@ export default function App() {
     }
   };
 
-  // Handler Order / Beli Produk
+  // Handler Submit Transaksi Order
   const handleOrderSubmit = async (orderPayload) => {
     try {
-      await orderService.createOrder(orderPayload);
+      const response = await orderService.createOrder(orderPayload);
       await fetchUserData();
-      setHistoryRefreshKey((prev) => prev + 1);
+      return response;
     } catch (err) {
       setUser((prev) => ({
         ...prev,
@@ -66,91 +65,59 @@ export default function App() {
       if (err.message !== 'Failed to fetch' && !err.message.includes('Network Error')) {
         throw err;
       }
+      return { success: true, order: { id: Date.now(), item: orderPayload.item, harga: orderPayload.harga, status: 'Success', created_at: new Date().toISOString() } };
     }
   };
 
   return (
-    <div className="app-layout">
-      {/* Top Navbar */}
-      <header className="top-bar">
-        <div className="top-bar-inner">
-          <div className="brand-section">
-            <img src={logoImg} alt="Triple S Logo" className="brand-logo-img" />
-            <div>
-              <div className="brand-name">Triple S Top-Up</div>
-              <div className="brand-tag">PORTAL TRANSAKSI DIGITAL</div>
-            </div>
-          </div>
+    <BrowserRouter>
+      <div className="app-layout">
+        {/* Main Navbar */}
+        <Navbar
+          user={user}
+          onOpenTopUpModal={() => setIsTopUpModalOpen(true)}
+        />
 
-          <div className="top-bar-actions">
-            <div className="server-status">
-              <span className="status-dot" />
-              <span>API :8080</span>
-            </div>
+        {/* Dynamic Page Routes */}
+        <div className="main-content-container">
+          <Routes>
+            {/* 1. Halaman Utama / Katalog Game */}
+            <Route path="/" element={<HomePage user={user} />} />
 
-            <div className="user-quick-pill">
-              <span className="user-quick-id">UID #{user?.id || 1}</span>
-              <span className="user-quick-saldo">{formatRupiah(user?.saldo)}</span>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Workspace */}
-      <main className="main-wrapper">
-        <div className="page-header">
-          <h1 className="page-title">Katalog & Pemesanan Produk</h1>
-          <p className="page-desc">
-            Pilih layanan produk digital, masukkan ID akun tujuan, dan selesaikan transaksi secara instan.
-          </p>
-        </div>
-
-        {/* Global Alert Notification */}
-        {feedback && (
-          <div className={`toast-notice toast-${feedback.type}`}>
-            {feedback.type === 'success' ? <IconCheck size={18} /> : <IconAlert size={18} />}
-            <span>{feedback.text}</span>
-          </div>
-        )}
-
-        {/* 2-Column Split Interface */}
-        <div className="split-grid">
-          {/* Left Column: Top-Up Order Flow */}
-          <div className="order-flow-col">
-            <OrderForm
-              user={user}
-              onOrderSubmit={handleOrderSubmit}
-              notification={feedback}
-              setNotification={setFeedback}
+            {/* 2. Halaman Top-Up Per Game (ala xcashshop.com/mobile-legends) */}
+            <Route
+              path="/game/:gameId"
+              element={
+                <GameDetailPage
+                  user={user}
+                  onOrderSubmit={handleOrderSubmit}
+                  onOpenTopUpModal={() => setIsTopUpModalOpen(true)}
+                />
+              }
             />
-          </div>
 
-          {/* Right Column: User Balance & Wallet Actions */}
-          <div className="sidebar-sticky">
-            <UserProfile
-              user={user}
-              loading={loadingUser}
-              onTopUp={handleTopUp}
-              onRefresh={fetchUserData}
-              feedback={feedback}
-              setFeedback={setFeedback}
-            />
-          </div>
+            {/* 3. Halaman Detail Transaksi / Invoice */}
+            <Route path="/transaksi/:orderId" element={<InvoicePage />} />
+
+            {/* 4. Halaman Riwayat Transaksi Lengkap */}
+            <Route path="/transaksi" element={<OrderHistoryPage userId={user?.id || 1} />} />
+
+            {/* Fallback route */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
         </div>
 
-        {/* Full-Width Bottom Section: Transaction Ledger */}
-        <div className="ledger-section">
-          <OrderHistory
-            userId={user?.id || 1}
-            triggerRefresh={historyRefreshKey}
-          />
-        </div>
-      </main>
+        {/* Footer */}
+        <Footer />
 
-      {/* Footer */}
-      <footer className="app-footer">
-        <div>Triple S Top-Up &mdash; Sistem Transaksi Terpadu &middot; Backend Golang PostgreSQL</div>
-      </footer>
-    </div>
+        {/* Modal Top Up Saldo Akun */}
+        <TopUpModal
+          isOpen={isTopUpModalOpen}
+          onClose={() => setIsTopUpModalOpen(false)}
+          user={user}
+          onTopUp={handleTopUp}
+        />
+      </div>
+    </BrowserRouter>
   );
 }
