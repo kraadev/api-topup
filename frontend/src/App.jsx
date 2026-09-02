@@ -6,6 +6,7 @@ import { userService } from './services/userService';
 import { orderService } from './services/orderService';
 import { formatRupiah } from './utils/formatters';
 import { IconCheck, IconAlert } from './components/Icons';
+import logoImg from './assets/logo.png';
 import './index.css';
 
 export default function App() {
@@ -74,9 +75,9 @@ export default function App() {
       <header className="top-bar">
         <div className="top-bar-inner">
           <div className="brand-section">
-            <div className="brand-symbol">TG</div>
+            <img src={logoImg} alt="Triple S Logo" className="brand-logo-img" />
             <div>
-              <div className="brand-name">TopUp Gateway</div>
+              <div className="brand-name">Triple S Top-Up</div>
               <div className="brand-tag">PORTAL TRANSAKSI DIGITAL</div>
             </div>
           </div>
@@ -148,7 +149,7 @@ export default function App() {
 
       {/* Footer */}
       <footer className="app-footer">
-        <div>TopUp Gateway — Sistem Transaksi Terpadu &middot; Backend Golang PostgreSQL</div>
+        <div>Triple S Top-Up &mdash; Sistem Transaksi Terpadu &middot; Backend Golang PostgreSQL</div>
       </footer>
     </div>
   );
