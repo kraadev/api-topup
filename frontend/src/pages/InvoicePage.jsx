@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link, useLocation } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import { orderService } from '../services/orderService';
 import { generatePaymentDetails } from '../data/paymentDetails';
 import { formatRupiah, formatDate } from '../utils/formatters';
@@ -19,6 +20,7 @@ import {
 export const InvoicePage = () => {
   const { orderId } = useParams();
   const location = useLocation();
+  const { topUpSaldo, refreshUser } = useAuth();
 
   const initialOrder = location.state?.orderData?.order || location.state?.orderData || null;
   const initialPaymentMethod = location.state?.paymentMethod || initialOrder?.paymentMethod || { id: 'triple_wallet', name: 'Saldo Dompet Triple S', isWallet: true };
@@ -94,8 +96,17 @@ export const InvoicePage = () => {
     setTimeout(() => setCopiedField(null), 2000);
   };
 
-  const handleConfirmPaid = () => {
+  const handleConfirmPaid = async () => {
     setOrderStatus('Success');
+    if (order?.isDeposit || order?.depositAmount || (order?.id && order.id.toString().startsWith('DEP'))) {
+      const amountToAdd = order.depositAmount || order.harga;
+      try {
+        await topUpSaldo(amountToAdd);
+        await refreshUser();
+      } catch (err) {
+        console.warn('Deposit balance credit notice:', err.message);
+      }
+    }
   };
 
   const handlePrint = () => {

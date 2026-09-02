@@ -3459,6 +3459,141 @@ button {
   border-radius: var(--radius-xs);
 }
 
+/* TOP-UP DEPOSIT MODAL STYLES */
+.modal-deposit-card {
+  max-width: 500px;
+}
+
+.modal-title-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--brand-primary);
+}
+
+.current-balance-banner {
+  background-color: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 0.65rem 0.85rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.banner-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.banner-figure {
+  font-family: var(--font-mono);
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--brand-primary);
+}
+
+.deposit-chips {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.4rem;
+  margin-top: 0.35rem;
+}
+
+.chip-action {
+  background-color: var(--bg-input);
+  border: 1px solid var(--border-default);
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.4rem 0.35rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: center;
+}
+
+.chip-action:hover {
+  border-color: var(--brand-border);
+  color: var(--text-primary);
+}
+
+.chip-action.active {
+  background-color: var(--brand-subtle);
+  border-color: var(--brand-primary);
+  color: var(--brand-primary);
+  font-weight: 700;
+}
+
+.deposit-methods-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  margin-top: 0.35rem;
+  max-height: 220px;
+  overflow-y: auto;
+  padding-right: 0.25rem;
+}
+
+.deposit-cat-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.deposit-cat-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.deposit-methods-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 0.35rem;
+}
+
+.deposit-method-item {
+  background-color: var(--bg-input);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  padding: 0.45rem 0.6rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.deposit-method-item:hover {
+  border-color: var(--brand-border);
+}
+
+.deposit-method-item.selected {
+  background-color: var(--brand-subtle);
+  border-color: var(--brand-primary);
+  box-shadow: 0 0 0 1px var(--brand-primary);
+}
+
+.deposit-method-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.deposit-method-name {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.deposit-method-tag {
+  font-size: 0.62rem;
+  color: var(--text-muted);
+}
+
 .modal-close-btn {
   background: transparent;
   border: none;
