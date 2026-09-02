@@ -2830,13 +2830,68 @@ button {
   padding: 0.65rem 0.85rem;
 }
 
-.instruction-steps-list {
-  padding-left: 1.1rem;
+/* 2. TAMPILAN QRIS */
+.qris-payment-display {
   display: flex;
   flex-direction: column;
-  gap: 0.3rem;
-  font-size: 0.72rem;
+  align-items: center;
+  text-align: center;
+  gap: 0.85rem;
+}
+
+.qris-box-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  align-items: center;
+}
+
+.qris-title {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.qris-sub {
+  font-size: 0.75rem;
   color: var(--text-secondary);
+}
+
+.qris-visual-frame {
+  display: flex;
+  justify-content: center;
+  margin: 0.5rem 0;
+}
+
+.qris-qr-code-box {
+  background-color: #ffffff;
+  padding: 1.15rem 1.35rem 0.95rem;
+  border-radius: var(--radius-md);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45rem;
+  border: 2px solid var(--brand-primary);
+}
+
+.qris-qr-code-box svg {
+  display: block;
+}
+
+.qris-merchant-tag {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: 0.04em;
+}
+
+.qris-nmid-tag {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #475569;
+  letter-spacing: 0.05em;
 }
 
 .confirm-payment-action-row {
@@ -3272,18 +3327,22 @@ button {
   animation: fadeIn 0.15s ease;
 }
 
-.auth-card-modal {
+.auth-card-modal,
+.modal-card {
   background-color: var(--bg-surface);
   border: 1px solid var(--border-default);
   border-radius: var(--radius-md);
   width: 100%;
-  max-width: 400px;
-  box-shadow: var(--card-shadow);
+  max-width: 460px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
   overflow: hidden;
   animation: scaleUp 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
 }
 
-.auth-modal-header {
+.auth-modal-header,
+.modal-header {
   padding: 0.85rem 1.15rem;
   border-bottom: 1px solid var(--border-subtle);
   display: flex;
@@ -3291,10 +3350,113 @@ button {
   align-items: center;
 }
 
-.auth-title {
+.auth-title,
+.modal-title {
   font-size: 1rem;
   font-weight: 800;
   color: var(--text-primary);
+}
+
+.modal-body {
+  padding: 1.15rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.confirm-notice {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+.confirm-details-table {
+  background-color: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 0.75rem 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.confirm-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.78rem;
+}
+
+.confirm-label {
+  color: var(--text-muted);
+}
+
+.confirm-val {
+  color: var(--text-primary);
+  font-weight: 600;
+  text-align: right;
+}
+
+.confirm-val.mono-val {
+  font-family: var(--font-mono);
+}
+
+.confirm-divider {
+  height: 1px;
+  background-color: var(--border-subtle);
+  margin: 0.35rem 0;
+}
+
+.confirm-row.total-row {
+  font-size: 0.88rem;
+  font-weight: 800;
+}
+
+.highlight-val {
+  font-family: var(--font-mono);
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--brand-primary);
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 0.35rem;
+}
+
+.guide-illustration-box {
+  background-color: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.guide-box-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.guide-box-desc {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.guide-example-badge {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  background-color: var(--brand-subtle);
+  color: var(--brand-primary);
+  padding: 0.45rem 0.65rem;
+  border-radius: var(--radius-xs);
 }
 
 .modal-close-btn {
