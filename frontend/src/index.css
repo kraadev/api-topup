@@ -138,9 +138,9 @@ button {
 
 .main-content-container {
   flex: 1;
-  max-width: 1160px;
+  max-width: 1240px;
   margin: 0 auto;
-  padding: 1.25rem 1.25rem 4rem;
+  padding: 1.25rem 1.5rem 4rem;
   width: 100%;
   min-width: 0;
 }
@@ -167,9 +167,9 @@ button {
 }
 
 .navbar-container {
-  max-width: 1160px;
+  max-width: 1240px;
   margin: 0 auto;
-  padding: 0 1.25rem;
+  padding: 0 1.5rem;
   width: 100%;
   display: flex;
   justify-content: space-between;
@@ -1280,23 +1280,15 @@ button {
 
 .game-detail-layout {
   display: grid;
-  grid-template-columns: 280px 1fr 320px;
-  gap: 1.15rem;
+  grid-template-columns: 320px 1fr;
+  gap: 1.5rem;
   align-items: start;
-}
-
-@media (max-width: 1100px) {
-  .game-detail-layout {
-    grid-template-columns: 1fr 320px;
-  }
-  .game-info-sidebar {
-    display: none;
-  }
 }
 
 @media (max-width: 900px) {
   .game-detail-layout {
     grid-template-columns: 1fr;
+    gap: 1rem;
   }
 }
 
@@ -3739,7 +3731,7 @@ button {
 }
 
 .footer-inner {
-  max-width: 1160px;
+  max-width: 1240px;
   margin: 0 auto;
 }
 
