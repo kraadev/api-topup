@@ -58,7 +58,7 @@ export const AuthProvider = ({ children }) => {
       };
       initGuest();
     }
-  }, []);
+  }, [refreshUser, user?.id]);
 
   // Login Email & Password
   const login = async (email, password) => {
