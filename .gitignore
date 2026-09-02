@@ -1,0 +1,17 @@
+# Binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+bin/
+
+# Environment files
+.env
+backend/.env
+*.env
+
+# IDE / Editor
+.vscode/
+.idea/
+.gemini/
