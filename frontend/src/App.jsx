@@ -4,13 +4,16 @@ import { OrderForm } from './components/OrderForm';
 import { OrderHistory } from './components/OrderHistory';
 import { userService } from './services/userService';
 import { orderService } from './services/orderService';
+import { formatRupiah } from './utils/formatters';
+import { IconCheck, IconAlert } from './components/Icons';
 import './index.css';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState('order'); // 'order' | 'user' | 'history'
   const [user, setUser] = useState(null);
   const [loadingUser, setLoadingUser] = useState(true);
   const [userError, setUserError] = useState(null);
+  const [feedback, setFeedback] = useState(null);
+  const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
 
   // Ambil data user dari backend Golang (default ID 1)
   const fetchUserData = useCallback(async () => {
@@ -21,10 +24,8 @@ export default function App() {
       const userData = response.data || response;
       setUser(userData);
     } catch (err) {
-      console.warn('Backend offline / belum ada data, menggunakan dummy data:', err.message);
-      setUserError('Backend belum aktif / user belum ada. Menggunakan simulasi lokal.');
-      // Fallback state lokal agar UI tetap interaktif
-      setUser((prev) => prev || { id: 1, username: 'GamerPro', saldo: 100000 });
+      setUserError('Koneksi ke backend belum aktif. Menggunakan state lokal.');
+      setUser((prev) => prev || { id: 1, username: 'player_one', saldo: 100000 });
     } finally {
       setLoadingUser(false);
     }
@@ -40,12 +41,10 @@ export default function App() {
       await userService.topUpSaldo(user?.id || 1, amount);
       await fetchUserData();
     } catch (err) {
-      // Fallback update saldo lokal jika backend belum dinyalakan
       setUser((prev) => ({
         ...prev,
         saldo: (prev?.saldo || 0) + Number(amount),
       }));
-      // Jika error bukan karena offline murni, lempar agar feedback muncul
       if (err.message !== 'Failed to fetch' && !err.message.includes('Network Error')) {
         throw err;
       }
@@ -57,8 +56,8 @@ export default function App() {
     try {
       await orderService.createOrder(orderPayload);
       await fetchUserData();
+      setHistoryRefreshKey((prev) => prev + 1);
     } catch (err) {
-      // Fallback update saldo lokal jika backend belum dinyalakan
       setUser((prev) => ({
         ...prev,
         saldo: Math.max(0, (prev?.saldo || 0) - orderPayload.harga),
@@ -70,62 +69,86 @@ export default function App() {
   };
 
   return (
-    <div className="app-container">
-      {/* Header & Navbar */}
-      <header className="navbar">
-        <div className="nav-brand">
-          <div className="brand-logo">⚡</div>
-          <div>
-            <h1 className="brand-title">TopUp Station</h1>
-            <span className="brand-subtitle">Platform Top-Up Produk Digital</span>
+    <div className="app-layout">
+      {/* Top Navbar */}
+      <header className="top-bar">
+        <div className="top-bar-inner">
+          <div className="brand-section">
+            <div className="brand-symbol">TG</div>
+            <div>
+              <div className="brand-name">TopUp Gateway</div>
+              <div className="brand-tag">PORTAL TRANSAKSI DIGITAL</div>
+            </div>
+          </div>
+
+          <div className="top-bar-actions">
+            <div className="server-status">
+              <span className="status-dot" />
+              <span>API :8080</span>
+            </div>
+
+            <div className="user-quick-pill">
+              <span className="user-quick-id">UID #{user?.id || 1}</span>
+              <span className="user-quick-saldo">{formatRupiah(user?.saldo)}</span>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Workspace */}
+      <main className="main-wrapper">
+        <div className="page-header">
+          <h1 className="page-title">Katalog & Pemesanan Produk</h1>
+          <p className="page-desc">
+            Pilih layanan produk digital, masukkan ID akun tujuan, dan selesaikan transaksi secara instan.
+          </p>
+        </div>
+
+        {/* Global Alert Notification */}
+        {feedback && (
+          <div className={`toast-notice toast-${feedback.type}`}>
+            {feedback.type === 'success' ? <IconCheck size={18} /> : <IconAlert size={18} />}
+            <span>{feedback.text}</span>
+          </div>
+        )}
+
+        {/* 2-Column Split Interface */}
+        <div className="split-grid">
+          {/* Left Column: Top-Up Order Flow */}
+          <div className="order-flow-col">
+            <OrderForm
+              user={user}
+              onOrderSubmit={handleOrderSubmit}
+              notification={feedback}
+              setNotification={setFeedback}
+            />
+          </div>
+
+          {/* Right Column: User Balance & Wallet Actions */}
+          <div className="sidebar-sticky">
+            <UserProfile
+              user={user}
+              loading={loadingUser}
+              onTopUp={handleTopUp}
+              onRefresh={fetchUserData}
+              feedback={feedback}
+              setFeedback={setFeedback}
+            />
           </div>
         </div>
 
-        <nav className="nav-tabs">
-          <button
-            className={`tab-btn ${activeTab === 'order' ? 'tab-active' : ''}`}
-            onClick={() => setActiveTab('order')}
-          >
-            🛒 Order Produk
-          </button>
-          <button
-            className={`tab-btn ${activeTab === 'user' ? 'tab-active' : ''}`}
-            onClick={() => setActiveTab('user')}
-          >
-            👤 Profil & Saldo
-          </button>
-          <button
-            className={`tab-btn ${activeTab === 'history' ? 'tab-active' : ''}`}
-            onClick={() => setActiveTab('history')}
-          >
-            📜 Riwayat
-          </button>
-        </nav>
-      </header>
-
-      {/* Main Content Area */}
-      <main className="main-content">
-        {activeTab === 'order' && (
-          <OrderForm user={user} onOrderSubmit={handleOrderSubmit} />
-        )}
-
-        {activeTab === 'user' && (
-          <UserProfile
-            user={user}
-            loading={loadingUser}
-            error={userError}
-            onTopUp={handleTopUp}
-            onRefresh={fetchUserData}
+        {/* Full-Width Bottom Section: Transaction Ledger */}
+        <div className="ledger-section">
+          <OrderHistory
+            userId={user?.id || 1}
+            triggerRefresh={historyRefreshKey}
           />
-        )}
-
-        {activeTab === 'history' && (
-          <OrderHistory userId={user?.id || 1} />
-        )}
+        </div>
       </main>
 
-      <footer className="footer">
-        <p>API Endpoint: <code>{import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'}</code></p>
+      {/* Footer */}
+      <footer className="app-footer">
+        <div>TopUp Gateway — Sistem Transaksi Terpadu &middot; Backend Golang PostgreSQL</div>
       </footer>
     </div>
   );

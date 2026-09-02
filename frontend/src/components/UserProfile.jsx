@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { formatRupiah } from '../utils/formatters';
+import { IconWallet, IconRefresh, IconPlus, IconCheck, IconAlert } from './Icons';
 
-export const UserProfile = ({ user, loading, onTopUp, error, onRefresh }) => {
+export const UserProfile = ({ user, loading, onTopUp, onRefresh, feedback, setFeedback }) => {
   const [topUpAmount, setTopUpAmount] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [feedback, setFeedback] = useState(null);
 
   const handleTopUpSubmit = async (e) => {
     e.preventDefault();
@@ -16,13 +16,11 @@ export const UserProfile = ({ user, loading, onTopUp, error, onRefresh }) => {
     }
 
     setIsSubmitting(true);
-    setFeedback(null);
-
     try {
       await onTopUp(amount);
       setFeedback({
         type: 'success',
-        text: `Top-up berhasil! Saldo sebesar ${formatRupiah(amount)} telah ditambahkan.`,
+        text: `Saldo berhasil ditambahkan sebesar ${formatRupiah(amount)}.`,
       });
       setTopUpAmount('');
     } catch (err) {
@@ -38,61 +36,34 @@ export const UserProfile = ({ user, loading, onTopUp, error, onRefresh }) => {
   const quickAmounts = [20000, 50000, 100000, 250000, 500000];
 
   return (
-    <div className="card user-card">
-      <div className="card-header">
-        <div className="user-profile-info">
-          <div className="avatar-badge">
-            {user?.username ? user.username.charAt(0).toUpperCase() : 'U'}
-          </div>
-          <div>
-            <h2 className="user-title">{user?.username || 'User Akun'}</h2>
-            <p className="user-id-text">ID Pengguna: #{user?.id || 1}</p>
-          </div>
-        </div>
+    <div className="wallet-card">
+      <div className="wallet-header">
+        <div className="wallet-title">Dompet Akun</div>
         <button
           type="button"
           onClick={onRefresh}
-          className="btn-icon"
-          title="Segarkan data dari server"
+          className="btn-secondary-flat"
+          title="Sinkronkan saldo dengan database"
           disabled={loading}
+          style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem' }}
         >
-          🔄 Refresh
+          <IconRefresh size={13} className={loading ? 'spin' : ''} />
+          <span>{loading ? 'Sinkron...' : 'Sync'}</span>
         </button>
       </div>
 
-      {/* Saldo Display Box */}
-      <div className="saldo-banner">
-        <div className="saldo-content">
-          <span className="saldo-tag">Sisa Saldo Anda</span>
-          <h3 className="saldo-figure">
-            {loading ? 'Memuat...' : formatRupiah(user?.saldo)}
-          </h3>
-        </div>
-        <div className="saldo-icon">💳</div>
+      <div className="wallet-balance">
+        {loading ? '...' : formatRupiah(user?.saldo)}
       </div>
 
-      {error && <div className="alert alert-warning">⚠️ {error}</div>}
-      {feedback && (
-        <div className={`alert alert-${feedback.type}`}>
-          {feedback.type === 'success' ? '✅ ' : '❌ '}
-          {feedback.text}
-        </div>
-      )}
-
-      {/* Form Top Up Saldo */}
-      <div className="topup-container">
-        <h3 className="section-title">Isi Saldo (Top-Up Dompet)</h3>
-        <p className="section-desc">
-          Tambahkan saldo akun untuk melakukan pembelian produk game dan digital.
-        </p>
-
-        <form onSubmit={handleTopUpSubmit} className="topup-form">
-          <div className="input-group">
-            <span className="input-prefix">Rp</span>
+      <div className="deposit-widget">
+        <div className="field-label" style={{ marginBottom: '0.5rem' }}>Top-Up Saldo Dompet</div>
+        <form onSubmit={handleTopUpSubmit}>
+          <div className="deposit-input-row">
             <input
               type="number"
-              className="form-input with-prefix"
-              placeholder="Contoh: 50000"
+              className="text-input"
+              placeholder="Nominal (Rp)"
               value={topUpAmount}
               onChange={(e) => setTopUpAmount(e.target.value)}
               min="10000"
@@ -101,28 +72,27 @@ export const UserProfile = ({ user, loading, onTopUp, error, onRefresh }) => {
             />
             <button
               type="submit"
-              className="btn btn-secondary"
+              className="btn-secondary-flat"
               disabled={isSubmitting || !topUpAmount}
+              style={{ whiteSpace: 'nowrap' }}
             >
-              {isSubmitting ? 'Memproses...' : '+ Isi Saldo'}
+              <IconPlus size={14} />
+              <span>{isSubmitting ? 'Proses...' : 'Isi Saldo'}</span>
             </button>
           </div>
 
-          <div className="quick-selection">
-            <span className="quick-label">Pilihan Cepat:</span>
-            <div className="chips-wrapper">
-              {quickAmounts.map((amt) => (
-                <button
-                  key={amt}
-                  type="button"
-                  className={`chip-btn ${Number(topUpAmount) === amt ? 'chip-active' : ''}`}
-                  onClick={() => setTopUpAmount(amt.toString())}
-                  disabled={isSubmitting}
-                >
-                  +{formatRupiah(amt)}
-                </button>
-              ))}
-            </div>
+          <div className="deposit-chips">
+            {quickAmounts.map((amt) => (
+              <button
+                key={amt}
+                type="button"
+                className="chip-action"
+                onClick={() => setTopUpAmount(amt.toString())}
+                disabled={isSubmitting}
+              >
+                +{formatRupiah(amt)}
+              </button>
+            ))}
           </div>
         </form>
       </div>
