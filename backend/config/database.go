@@ -41,6 +41,9 @@ func LoadEnv(filename string) {
 			}
 		}
 	}
+	if err := scanner.Err(); err != nil {
+		log.Printf("⚠️ Gagal membaca seluruh isi file .env: %v\n", err)
+	}
 }
 
 // InitDB menginisialisasi connection pool ke PostgreSQL dan auto-migrate tabel
