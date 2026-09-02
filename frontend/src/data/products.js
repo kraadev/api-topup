@@ -1,4 +1,12 @@
-// Katalog Produk Digital Lengkap & Terstruktur
+// Katalog Produk Digital Lengkap & Terstruktur dengan Gambar Game Resmi
+import imgMlbb from '../assets/games/mobile-legends.jpg';
+import imgFreeFire from '../assets/games/free-fire.jpg';
+import imgValorant from '../assets/games/valorant.jpg';
+import imgGenshin from '../assets/games/genshin-impact.jpg';
+import imgPubg from '../assets/games/pubg-mobile.jpg';
+import imgHok from '../assets/games/honor-of-kings.jpg';
+import imgRoblox from '../assets/games/roblox.jpg';
+import imgSteam from '../assets/games/steam-wallet.jpg';
 
 export const GAME_PRODUCTS = [
   {
@@ -10,6 +18,7 @@ export const GAME_PRODUCTS = [
     category: 'mobile',
     categoryLabel: 'Mobile Game',
     badge: 'POPULER',
+    image: imgMlbb,
     isPopular: true,
     isFlashSale: true,
     flashSaleItem: 'Weekly Diamond Pass',
@@ -45,6 +54,7 @@ export const GAME_PRODUCTS = [
     category: 'mobile',
     categoryLabel: 'Mobile Game',
     badge: 'DISKON',
+    image: imgFreeFire,
     isPopular: true,
     heroColor: '#f59e0b',
     bannerGradient: 'linear-gradient(135deg, #b45309 0%, #0f172a 100%)',
@@ -75,6 +85,7 @@ export const GAME_PRODUCTS = [
     category: 'pc',
     categoryLabel: 'PC Game',
     badge: 'INSTANT',
+    image: imgValorant,
     isPopular: true,
     heroColor: '#f43f5e',
     bannerGradient: 'linear-gradient(135deg, #e11d48 0%, #0f172a 100%)',
@@ -103,6 +114,7 @@ export const GAME_PRODUCTS = [
     category: 'pc',
     categoryLabel: 'Cross-Platform',
     badge: 'RESMI',
+    image: imgGenshin,
     isPopular: true,
     heroColor: '#06b6d4',
     bannerGradient: 'linear-gradient(135deg, #0891b2 0%, #0f172a 100%)',
@@ -132,6 +144,7 @@ export const GAME_PRODUCTS = [
     category: 'mobile',
     categoryLabel: 'Mobile Game',
     badge: 'PROMO',
+    image: imgPubg,
     heroColor: '#10b981',
     bannerGradient: 'linear-gradient(135deg, #059669 0%, #0f172a 100%)',
     accentColor: '#10b981',
@@ -159,6 +172,7 @@ export const GAME_PRODUCTS = [
     category: 'mobile',
     categoryLabel: 'Mobile Game',
     badge: 'BARU',
+    image: imgHok,
     heroColor: '#eab308',
     bannerGradient: 'linear-gradient(135deg, #ca8a04 0%, #0f172a 100%)',
     accentColor: '#eab308',
@@ -186,6 +200,7 @@ export const GAME_PRODUCTS = [
     category: 'voucher',
     categoryLabel: 'Voucher & Gift Card',
     badge: 'INSTANT',
+    image: imgRoblox,
     heroColor: '#ef4444',
     bannerGradient: 'linear-gradient(135deg, #dc2626 0%, #0f172a 100%)',
     accentColor: '#ef4444',
@@ -210,6 +225,7 @@ export const GAME_PRODUCTS = [
     category: 'voucher',
     categoryLabel: 'Voucher Digital',
     badge: 'OFFICIAL',
+    image: imgSteam,
     heroColor: '#6366f1',
     bannerGradient: 'linear-gradient(135deg, #4338ca 0%, #0f172a 100%)',
     accentColor: '#6366f1',

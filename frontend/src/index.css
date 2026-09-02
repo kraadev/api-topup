@@ -888,10 +888,15 @@ button {
 }
 
 .deal-card-header {
-  padding: 0.5rem 0.75rem;
+  height: 80px;
+  padding: 0.5rem 0.65rem;
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
+  position: relative;
+  overflow: hidden;
+  background-size: cover;
+  background-position: center;
 }
 
 .deal-game-tag {
@@ -899,9 +904,11 @@ button {
   font-size: 0.65rem;
   font-weight: 800;
   color: #ffffff;
-  background-color: rgba(0, 0, 0, 0.4);
+  background-color: rgba(0, 0, 0, 0.6);
   padding: 0.15rem 0.4rem;
   border-radius: 4px;
+  position: relative;
+  z-index: 2;
 }
 
 .deal-discount-badge {
@@ -912,6 +919,8 @@ button {
   font-weight: 800;
   padding: 0.15rem 0.4rem;
   border-radius: 4px;
+  position: relative;
+  z-index: 2;
 }
 
 .deal-card-body {
@@ -1093,12 +1102,22 @@ button {
 }
 
 .game-card-banner {
-  height: 75px;
-  padding: 0.5rem 0.65rem;
+  height: 105px;
+  padding: 0.55rem 0.65rem;
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
   position: relative;
+  overflow: hidden;
+  background-size: cover;
+  background-position: center;
+}
+
+.game-card-banner-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.15) 0%, rgba(9, 14, 23, 0.7) 100%);
+  pointer-events: none;
 }
 
 .game-card-code {
@@ -1106,19 +1125,25 @@ button {
   font-size: 0.68rem;
   font-weight: 800;
   color: #ffffff;
-  background-color: rgba(0, 0, 0, 0.45);
+  background-color: rgba(0, 0, 0, 0.6);
   padding: 0.15rem 0.45rem;
   border-radius: 4px;
+  backdrop-filter: blur(4px);
+  position: relative;
+  z-index: 2;
 }
 
 .game-card-badge {
   font-family: var(--font-mono);
-  font-size: 0.6rem;
+  font-size: 0.62rem;
   font-weight: 800;
-  color: #000;
-  background-color: var(--accent-amber);
+  background-color: var(--card-accent, var(--brand-primary));
+  color: #000000;
   padding: 0.15rem 0.4rem;
   border-radius: 4px;
+  letter-spacing: 0.04em;
+  position: relative;
+  z-index: 2;
 }
 
 .game-card-body {

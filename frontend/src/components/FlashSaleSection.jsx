@@ -47,7 +47,15 @@ export const FlashSaleSection = () => {
             to={`/game/${game.slug}`}
             className="deal-card"
           >
-            <div className="deal-card-header" style={{ background: game.bannerGradient }}>
+            <div
+              className="deal-card-header"
+              style={{
+                backgroundImage: game.image ? `url(${game.image})` : game.bannerGradient,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+              }}
+            >
+              <div className="game-card-banner-overlay" />
               <span className="deal-game-tag">{game.code}</span>
               <span className="deal-discount-badge">Hemat {discountPct}%</span>
             </div>

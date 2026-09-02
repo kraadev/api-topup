@@ -199,7 +199,14 @@ export const GameDetailPage = ({ user, onOrderSubmit, onOpenTopUpModal }) => {
         {/* Left Sticky Sidebar: Game Meta Info & Guide */}
         <aside className="game-info-sidebar">
           <div className="game-info-card">
-            <div className="game-banner-box" style={{ background: game.bannerGradient }}>
+            <div
+              className="game-banner-box"
+              style={{
+                backgroundImage: game.image ? `linear-gradient(180deg, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.7) 100%), url(${game.image})` : game.bannerGradient,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+              }}
+            >
               <span className="game-code-badge">{game.code}</span>
               <span className="game-publisher-tag">{game.publisher}</span>
             </div>

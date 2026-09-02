@@ -126,8 +126,13 @@ export const HomePage = ({ user, onOpenSearchModal }) => {
               >
                 <div
                   className="game-card-banner"
-                  style={{ background: game.bannerGradient }}
+                  style={{
+                    backgroundImage: game.image ? `url(${game.image})` : game.bannerGradient,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                  }}
                 >
+                  <div className="game-card-banner-overlay" />
                   <span className="game-card-code">{game.code}</span>
                   {game.badge && <span className="game-card-badge">{game.badge}</span>}
                 </div>
