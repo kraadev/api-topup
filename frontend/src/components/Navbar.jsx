@@ -67,9 +67,11 @@ export const Navbar = ({ onOpenSearch, onOpenTopUp, onOpenAuth }) => {
               src="/logo.png"
               alt="Triple S Logo"
               className="brand-logo-img"
-              width="140"
-              height="38"
             />
+            <div className="brand-text-block">
+              <span className="brand-name">TRIPLE S</span>
+              <span className="brand-tag">TOP-UP STORE</span>
+            </div>
           </Link>
         </div>
 
