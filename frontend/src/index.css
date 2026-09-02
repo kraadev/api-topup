@@ -88,6 +88,7 @@
   --z-toast: 150;
 }
 
+html,
 body {
   background-color: var(--bg-app);
   color: var(--text-primary);
@@ -96,7 +97,15 @@ body {
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
+  width: 100%;
+  max-width: 100vw;
   transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+#root {
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
 }
 
 a {
@@ -116,6 +125,9 @@ button {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
 }
 
 .main-content-container {
@@ -124,11 +136,12 @@ button {
   margin: 0 auto;
   padding: 1.25rem 1.25rem 4rem;
   width: 100%;
+  min-width: 0;
 }
 
 @media (max-width: 768px) {
   .main-content-container {
-    padding: 0.85rem 0.85rem 5.5rem;
+    padding: 0.75rem 0.75rem 5.5rem;
   }
 }
 
@@ -520,6 +533,57 @@ button {
 
   .navbar-search-btn .search-btn-text,
   .navbar-search-btn .search-btn-kbd {
+    display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .navbar-container {
+    padding: 0 0.75rem;
+    gap: 0.35rem;
+  }
+
+  .navbar-right {
+    gap: 0.35rem;
+  }
+
+  /* Sembunyikan tombol search dan auth di header atas karena sudah ada di Bottom Nav & Drawer */
+  .navbar-search-btn {
+    display: none;
+  }
+
+  .auth-btn-group .btn-auth-register {
+    display: none;
+  }
+
+  .user-balance-pill {
+    padding: 0.2rem 0.4rem;
+    gap: 0.35rem;
+  }
+
+  .balance-caption {
+    display: none;
+  }
+
+  .balance-figure {
+    font-size: 0.72rem;
+  }
+
+  .balance-topup-trigger {
+    padding: 0.15rem 0.35rem;
+    font-size: 0.65rem;
+  }
+
+  .brand-logo-img {
+    height: 32px;
+    max-width: 38px;
+  }
+
+  .brand-name {
+    font-size: 0.95rem;
+  }
+
+  .brand-tag {
     display: none;
   }
 }
