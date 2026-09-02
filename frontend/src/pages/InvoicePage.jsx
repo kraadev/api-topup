@@ -200,7 +200,19 @@ export const InvoicePage = () => {
 
   return (
     <div className="invoice-page">
-      <div className="invoice-card">
+      <div className="invoice-card printable-receipt">
+        {/* Header Khusus Print Struk Resmi */}
+        <div className="print-only-header">
+          <div className="print-brand-group">
+            <h2 className="print-brand-title">TRIPLE S STORE</h2>
+            <span className="print-brand-tagline">Official Digital Gaming & Top-Up Gateway</span>
+          </div>
+          <div className="print-invoice-badge">
+            <span className="print-badge-label">BUKTI PEMBAYARAN RESMI</span>
+            <span className="print-badge-id">#TRX-{order.id}</span>
+          </div>
+        </div>
+
         {/* Status Header Dinamis Sesuai Tahapan */}
         <div className="invoice-header">
           {stage === 1 && (
@@ -497,6 +509,12 @@ export const InvoicePage = () => {
         <div className="invoice-security-notice">
           <IconShield size={16} className="text-emerald" />
           <span>Transaksi ini diproses melalui PostgreSQL Atomic Transaction yang aman, legal, dan terenkripsi.</span>
+        </div>
+
+        {/* Footer Khusus Cetak Struk */}
+        <div className="print-only-footer">
+          <p>Terima kasih telah bertransaksi di TRIPLE S STORE.</p>
+          <p>Struk digital ini merupakan bukti transaksi resmi dan sah yang dicetak pada {new Date().toLocaleString('id-ID')}.</p>
         </div>
 
         {/* Actions Row */}
