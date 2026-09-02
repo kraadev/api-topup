@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { formatRupiah } from '../utils/formatters';
 import {
+  IconGamepad,
   IconSearch,
   IconWallet,
   IconUser,
