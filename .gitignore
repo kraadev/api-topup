@@ -16,5 +16,8 @@ backend/.env
 .idea/
 .gemini/
 
-# Go workspace
-go.work.sum
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+
