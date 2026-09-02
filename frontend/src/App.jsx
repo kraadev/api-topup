@@ -70,19 +70,30 @@ export default function App() {
 
   // Handler Submit Transaksi Order
   const handleOrderSubmit = async (orderPayload) => {
-    try {
-      const response = await orderService.createOrder(orderPayload);
+    const isWallet = orderPayload.paymentMethod?.isWallet;
+
+    if (isWallet) {
+      // Jika bayar menggunakan Saldo Dompet -> Potong saldo via backend Golang
+      const response = await orderService.createOrder({
+        userId: orderPayload.userId,
+        item: orderPayload.item,
+        harga: orderPayload.harga,
+      });
       await fetchUserData();
       return response;
-    } catch (err) {
-      setUser((prev) => ({
-        ...prev,
-        saldo: Math.max(0, (prev?.saldo || 0) - orderPayload.harga),
-      }));
-      if (err.message !== 'Failed to fetch' && !err.message.includes('Network Error')) {
-        throw err;
-      }
-      return { success: true, order: { id: Date.now(), item: orderPayload.item, harga: orderPayload.harga, status: 'Success', created_at: new Date().toISOString() } };
+    } else {
+      // Jika bayar menggunakan Virtual Account (BCA/Mandiri/BRI/BNI) atau QRIS
+      const newOrderId = Math.floor(100000 + Math.random() * 900000);
+      const pendingOrder = {
+        id: newOrderId,
+        user_id: orderPayload.userId,
+        item: orderPayload.item,
+        harga: orderPayload.harga,
+        status: 'Pending',
+        paymentMethod: orderPayload.paymentMethod,
+        created_at: new Date().toISOString(),
+      };
+      return { success: true, order: pendingOrder, data: { order: pendingOrder } };
     }
   };
 

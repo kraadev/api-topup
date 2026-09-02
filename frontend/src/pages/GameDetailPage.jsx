@@ -157,13 +157,20 @@ export const GameDetailPage = ({ user, onOrderSubmit, onOpenTopUpModal }) => {
       userId: user?.id || 1,
       item: fullItemName,
       harga: finalTotal,
+      paymentMethod: currentPaymentMethod,
     };
 
     try {
       const response = await onOrderSubmit(payload);
       setShowConfirmModal(false);
-      const createdOrderId = response?.data?.order?.id || response?.order?.id || Date.now();
-      navigate(`/transaksi/${createdOrderId}`, { state: { orderData: response?.data || response } });
+      const orderData = response?.data?.order || response?.order || response?.data || response;
+      const createdOrderId = orderData?.id || Date.now();
+      navigate(`/transaksi/${createdOrderId}`, {
+        state: {
+          orderData: orderData,
+          paymentMethod: currentPaymentMethod,
+        },
+      });
     } catch (err) {
       setErrorMsg(err.message || 'Transaksi gagal diproses oleh sistem.');
       setShowConfirmModal(false);
