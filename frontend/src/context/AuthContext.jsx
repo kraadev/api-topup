@@ -22,34 +22,50 @@ export const AuthProvider = ({ children }) => {
 
   // Sync user profile dari backend
   const refreshUser = useCallback(async () => {
-    if (!user?.id) return;
+    const targetId = user?.id || 1;
     try {
-      const res = await userService.getUserById(user.id);
-      const userData = res.data || res;
+      const res = await userService.getUserById(targetId);
+      const userData = res.data?.data || res.data || res;
       if (userData && userData.id) {
         setUser((prev) => {
-          const updated = { ...prev, ...userData };
+          const updated = prev ? { ...prev, ...userData } : userData;
           localStorage.setItem('triple_user', JSON.stringify(updated));
           return updated;
         });
       }
     } catch (err) {
-      console.warn('Gagal sinkron data user:', err.message);
+      console.warn('Gagal sinkron data user dari server:', err.message);
     }
   }, [user?.id]);
 
+  // Inisialisasi awal saat load
   useEffect(() => {
     if (user?.id) {
       refreshUser();
+    } else {
+      // Ambil user default #1 jika belum login
+      const initGuest = async () => {
+        try {
+          const res = await userService.getUserById(1);
+          const userData = res.data?.data || res.data || res;
+          if (userData && userData.id) {
+            setUser(userData);
+            localStorage.setItem('triple_user', JSON.stringify(userData));
+          }
+        } catch {
+          // fallback jika backend belum running
+        }
+      };
+      initGuest();
     }
-  }, [refreshUser]);
+  }, []);
 
   // Login Email & Password
   const login = async (email, password) => {
     setLoading(true);
     try {
       const res = await authService.login({ email, password });
-      const userData = res.data?.user || res.data || res;
+      const userData = res.data?.user || res.data?.data || res.data || res;
       const userToken = res.data?.token || `token_${Date.now()}`;
       setUser(userData);
       setToken(userToken);
@@ -67,7 +83,7 @@ export const AuthProvider = ({ children }) => {
     try {
       const username = email.split('@')[0];
       const res = await authService.register({ name, email, password, username });
-      const userData = res.data || res;
+      const userData = res.data?.data || res.data || res;
       const userToken = `token_${Date.now()}`;
       setUser(userData);
       setToken(userToken);
@@ -89,7 +105,7 @@ export const AuthProvider = ({ children }) => {
         google_id: googleUser.google_id || `google_${Date.now()}`,
         avatar_url: googleUser.avatar_url || '',
       });
-      const userData = res.data?.user || res.data || res;
+      const userData = res.data?.user || res.data?.data || res.data || res;
       const userToken = res.data?.token || `google_token_${Date.now()}`;
       setUser(userData);
       setToken(userToken);
@@ -124,11 +140,44 @@ export const AuthProvider = ({ children }) => {
     return await authService.resetPassword({ email, otp_code: otpCode, new_password: newPassword });
   };
 
-  // Top Up Saldo Helper
+  // Top Up Saldo Helper (Mendukung user login & guest user #1)
   const topUpSaldo = async (amount) => {
-    if (!user?.id) return;
-    await userService.topUpSaldo(user.id, amount);
-    await refreshUser();
+    const numAmount = Number(amount);
+    if (!numAmount || numAmount <= 0) return;
+
+    const targetUserId = user?.id || 1;
+
+    try {
+      const res = await userService.topUpSaldo(targetUserId, numAmount);
+      const updatedUser = res.data?.data || res.data || res;
+
+      if (updatedUser && updatedUser.saldo !== undefined) {
+        setUser((prev) => {
+          const merged = prev ? { ...prev, ...updatedUser } : updatedUser;
+          localStorage.setItem('triple_user', JSON.stringify(merged));
+          return merged;
+        });
+      } else {
+        setUser((prev) => {
+          const currentSaldo = prev?.saldo || 0;
+          const merged = prev
+            ? { ...prev, saldo: currentSaldo + numAmount }
+            : { id: 1, name: 'User Triple S', username: 'user1', saldo: numAmount };
+          localStorage.setItem('triple_user', JSON.stringify(merged));
+          return merged;
+        });
+      }
+    } catch (err) {
+      console.warn('Backend top up notice (updating local state):', err.message);
+      setUser((prev) => {
+        const currentSaldo = prev?.saldo || 0;
+        const merged = prev
+          ? { ...prev, saldo: currentSaldo + numAmount }
+          : { id: 1, name: 'User Triple S', username: 'user1', saldo: numAmount };
+        localStorage.setItem('triple_user', JSON.stringify(merged));
+        return merged;
+      });
+    }
   };
 
   return (

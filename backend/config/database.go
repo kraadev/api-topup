@@ -163,6 +163,14 @@ func AutoMigrate(db *sql.DB) error {
 
 	CREATE INDEX IF NOT EXISTS idx_orders_user_id ON orders(user_id);
 	CREATE INDEX IF NOT EXISTS idx_otps_email ON otps(email);
+
+	-- Pastikan minimal ada 1 user default (ID #1)
+	INSERT INTO users (id, username, name, email, saldo)
+	VALUES (1, 'steaven', 'Steaven Galang', 'steavengalang@gmail.com', 0)
+	ON CONFLICT (id) DO NOTHING;
+
+	-- Sinkronkan sequence serial jika id=1 dimasukkan manual
+	SELECT setval(pg_get_serial_sequence('users', 'id'), COALESCE((SELECT MAX(id) FROM users), 1));
 	`
 
 	_, err := db.Exec(schemaQuery)

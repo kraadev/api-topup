@@ -48,3 +48,10 @@ CREATE TABLE IF NOT EXISTS otps (
 -- Index untuk mempercepat query
 CREATE INDEX IF NOT EXISTS idx_orders_user_id ON orders(user_id);
 CREATE INDEX IF NOT EXISTS idx_otps_email ON otps(email);
+
+-- 4. Seed User Default (ID #1)
+INSERT INTO users (id, username, name, email, saldo)
+VALUES (1, 'steaven', 'Steaven Galang', 'steavengalang@gmail.com', 0)
+ON CONFLICT (id) DO NOTHING;
+
+SELECT setval(pg_get_serial_sequence('users', 'id'), COALESCE((SELECT MAX(id) FROM users), 1));
