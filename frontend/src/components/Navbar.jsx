@@ -1,211 +1,362 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { formatRupiah } from '../utils/formatters';
 import {
   IconSearch,
-  IconHistory,
-  IconPlus,
-  IconTag,
-  IconCalculator,
+  IconWallet,
+  IconUser,
   IconMenu,
   IconClose,
-  IconGamepad,
+  IconHistory,
+  IconCalculator,
+  IconTag,
+  IconPlus,
+  IconSun,
+  IconMoon,
+  IconLogOut,
   IconShield,
+  IconChevronDown,
 } from './Icons';
-import logoImg from '../assets/logo.png';
 
-export const Navbar = ({ user, onOpenTopUpModal, onOpenSearchModal }) => {
+export const Navbar = ({ onOpenSearch, onOpenTopUp, onOpenAuth }) => {
   const location = useLocation();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { user, isAuthenticated, logout } = useAuth();
+  const { theme, toggleTheme, resolvedTheme } = useTheme();
 
-  const closeMobileMenu = () => setMobileMenuOpen(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  // Close dropdown on click outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setProfileDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Close mobile menu on route change
+  useEffect(() => {
+    setMobileMenuOpen(false);
+    setProfileDropdownOpen(false);
+  }, [location.pathname]);
+
+  const navLinks = [
+    { label: 'Beranda', path: '/' },
+    { label: 'Promo & Diskon', path: '/promo' },
+    { label: 'Kalkulator MLBB', path: '/kalkulator' },
+    { label: 'Cek Pesanan', path: '/cek-transaksi' },
+    { label: 'Riwayat Transaksi', path: '/transaksi' },
+  ];
+
+  const userInitial = (user?.name || user?.username || 'U').charAt(0).toUpperCase();
 
   return (
-    <>
-      <header className="top-bar">
-        <div className="top-bar-inner">
-          {/* Brand Logo */}
-          <Link to="/" className="brand-section-link" onClick={closeMobileMenu}>
-            <img src={logoImg} alt="Triple S Logo" className="brand-logo-img" />
-            <div className="brand-text-block">
-              <span className="brand-name">Triple S Top-Up</span>
-              <span className="brand-tag">PORTAL TRANSAKSI RESMI</span>
-            </div>
+    <header className="header-navbar">
+      <div className="navbar-container">
+        {/* Left: Brand Logo */}
+        <div className="navbar-left">
+          <Link to="/" className="brand-logo-link" aria-label="Beranda Triple S">
+            <img
+              src="/logo.png"
+              alt="Triple S Logo"
+              className="brand-logo-img"
+              width="140"
+              height="38"
+            />
           </Link>
+        </div>
 
-          {/* Desktop Search Trigger */}
+        {/* Center: Main Navigation */}
+        <nav className="navbar-center" aria-label="Navigasi Utama">
+          <ul className="nav-links-list">
+            {navLinks.map((link) => {
+              const isActive = location.pathname === link.path;
+              return (
+                <li key={link.path}>
+                  <Link
+                    to={link.path}
+                    className={`nav-item-link ${isActive ? 'active' : ''}`}
+                  >
+                    {link.label}
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </nav>
+
+        {/* Right: Actions (Search, Theme, Balance, Auth/Profile) */}
+        <div className="navbar-right">
+          {/* Quick Search Palette Trigger */}
           <button
             type="button"
             className="navbar-search-btn"
-            onClick={onOpenSearchModal}
-            title="Cari game (Ctrl+K)"
+            onClick={onOpenSearch}
+            title="Cari Game (Ctrl+K)"
           >
-            <IconSearch size={16} className="search-btn-icon" />
-            <span className="search-btn-text">Cari game favoritmu...</span>
+            <IconSearch size={15} />
+            <span className="search-btn-text">Cari game...</span>
             <kbd className="search-btn-kbd">Ctrl K</kbd>
           </button>
 
-          {/* Desktop Navigation Links */}
-          <nav className="nav-menu">
-            <Link
-              to="/"
-              className={`nav-link ${location.pathname === '/' ? 'active' : ''}`}
-            >
-              Katalog Game
-            </Link>
+          {/* Theme Switcher Toggle */}
+          <button
+            type="button"
+            className="navbar-theme-btn"
+            onClick={toggleTheme}
+            title={`Ganti ke mode ${resolvedTheme === 'dark' ? 'Terang' : 'Gelap'}`}
+            aria-label="Toggle Theme"
+          >
+            {resolvedTheme === 'dark' ? <IconSun size={16} /> : <IconMoon size={16} />}
+          </button>
 
-            <Link
-              to="/cek-transaksi"
-              className={`nav-link ${location.pathname === '/cek-transaksi' ? 'active' : ''}`}
+          {/* Saldo Dompet Pill */}
+          <div className="user-balance-pill">
+            <div className="balance-icon-wrap">
+              <IconWallet size={14} className="text-emerald" />
+            </div>
+            <div className="balance-info-wrap">
+              <span className="balance-caption">Saldo Dompet</span>
+              <span className="balance-figure">{formatRupiah(user?.saldo || 0)}</span>
+            </div>
+            <button
+              type="button"
+              className="balance-topup-trigger"
+              onClick={onOpenTopUp}
+              title="Isi Saldo Dompet"
             >
-              Cek Pesanan
-            </Link>
+              <IconPlus size={12} />
+              <span>Isi</span>
+            </button>
+          </div>
 
-            <Link
-              to="/transaksi"
-              className={`nav-link ${location.pathname.startsWith('/transaksi') && location.pathname !== '/cek-transaksi' ? 'active' : ''}`}
-            >
-              Riwayat
-            </Link>
-
-            <Link
-              to="/promo"
-              className={`nav-link ${location.pathname === '/promo' ? 'active' : ''}`}
-            >
-              Promo
-            </Link>
-
-            <Link
-              to="/kalkulator"
-              className={`nav-link ${location.pathname === '/kalkulator' ? 'active' : ''}`}
-            >
-              Kalkulator
-            </Link>
-          </nav>
-
-          {/* User Balance & Actions */}
-          <div className="top-bar-actions">
-            <div className="user-wallet-pill">
-              <div className="wallet-meta">
-                <span className="wallet-label">Saldo Akun</span>
-                <span className="wallet-amount">{formatRupiah(user?.saldo)}</span>
-              </div>
+          {/* Auth & Profile Actions */}
+          {isAuthenticated ? (
+            <div className="profile-dropdown-wrapper" ref={dropdownRef}>
               <button
                 type="button"
-                onClick={onOpenTopUpModal}
-                className="btn-topup-trigger"
-                title="Isi Saldo Akun"
+                className="profile-trigger-btn"
+                onClick={() => setProfileDropdownOpen((prev) => !prev)}
+                aria-expanded={profileDropdownOpen}
               >
-                <IconPlus size={14} />
-                <span>Isi Saldo</span>
+                <div className="profile-avatar-circle">
+                  {user?.avatar_url ? (
+                    <img src={user.avatar_url} alt={user.name} className="avatar-img" />
+                  ) : (
+                    <span>{userInitial}</span>
+                  )}
+                </div>
+                <span className="profile-username-label">{user?.name || user?.username}</span>
+                <IconChevronDown size={14} className={`chevron-icon ${profileDropdownOpen ? 'rotated' : ''}`} />
+              </button>
+
+              {profileDropdownOpen && (
+                <div className="profile-dropdown-menu">
+                  <div className="dropdown-user-header">
+                    <span className="dropdown-name">{user?.name || user?.username}</span>
+                    <span className="dropdown-email">{user?.email || `UID #${user?.id}`}</span>
+                  </div>
+
+                  <div className="dropdown-divider" />
+
+                  <Link to="/profile" className="dropdown-item">
+                    <IconUser size={15} />
+                    <span>Profil & Akun</span>
+                  </Link>
+
+                  <Link to="/transaksi" className="dropdown-item">
+                    <IconHistory size={15} />
+                    <span>Riwayat Transaksi</span>
+                  </Link>
+
+                  <Link to="/kalkulator" className="dropdown-item">
+                    <IconCalculator size={15} />
+                    <span>Kalkulator Game</span>
+                  </Link>
+
+                  <div className="dropdown-divider" />
+
+                  <button
+                    type="button"
+                    onClick={logout}
+                    className="dropdown-item text-danger"
+                  >
+                    <IconLogOut size={15} />
+                    <span>Keluar / Logout</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="auth-btn-group">
+              <button
+                type="button"
+                className="btn-auth-login"
+                onClick={() => onOpenAuth('login')}
+              >
+                Masuk
+              </button>
+              <button
+                type="button"
+                className="btn-auth-register"
+                onClick={() => onOpenAuth('register')}
+              >
+                Daftar
+              </button>
+            </div>
+          )}
+
+          {/* Mobile Hamburger Menu Trigger */}
+          <button
+            type="button"
+            className="mobile-hamburger-btn"
+            onClick={() => setMobileMenuOpen((p) => !p)}
+            aria-label="Buka Menu"
+          >
+            {mobileMenuOpen ? <IconClose size={20} /> : <IconMenu size={20} />}
+          </button>
+        </div>
+      </div>
+
+      {/* Mobile Drawer Menu */}
+      {mobileMenuOpen && (
+        <div className="mobile-drawer-overlay" onClick={() => setMobileMenuOpen(false)}>
+          <div className="mobile-drawer-content" onClick={(e) => e.stopPropagation()}>
+            <div className="mobile-drawer-header">
+              <span className="drawer-title">Menu Navigasi</span>
+              <button
+                type="button"
+                className="modal-close-btn"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <IconClose size={18} />
               </button>
             </div>
 
-            {/* Mobile Hamburger Toggle */}
-            <button
-              type="button"
-              className="mobile-menu-toggle"
-              onClick={() => setMobileMenuOpen((prev) => !prev)}
-              aria-label="Toggle Navigation Menu"
-            >
-              {mobileMenuOpen ? <IconClose size={22} /> : <IconMenu size={22} />}
-            </button>
-          </div>
-        </div>
-
-        {/* Mobile Navigation Drawer */}
-        {mobileMenuOpen && (
-          <div className="mobile-drawer">
-            <button
-              type="button"
-              className="mobile-search-trigger"
-              onClick={() => {
-                closeMobileMenu();
-                onOpenSearchModal();
-              }}
-            >
-              <IconSearch size={16} />
-              <span>Cari game atau voucher...</span>
-            </button>
-
-            <div className="mobile-nav-links">
-              <Link to="/" className={`mobile-nav-item ${location.pathname === '/' ? 'active' : ''}`} onClick={closeMobileMenu}>
-                <IconGamepad size={18} />
-                <span>Katalog Game</span>
-              </Link>
-              <Link to="/cek-transaksi" className={`mobile-nav-item ${location.pathname === '/cek-transaksi' ? 'active' : ''}`} onClick={closeMobileMenu}>
-                <IconSearch size={18} />
-                <span>Cek Status Pesanan</span>
-              </Link>
-              <Link to="/transaksi" className={`mobile-nav-item ${location.pathname.startsWith('/transaksi') && location.pathname !== '/cek-transaksi' ? 'active' : ''}`} onClick={closeMobileMenu}>
-                <IconHistory size={18} />
-                <span>Riwayat Transaksi</span>
-              </Link>
-              <Link to="/promo" className={`mobile-nav-item ${location.pathname === '/promo' ? 'active' : ''}`} onClick={closeMobileMenu}>
-                <IconTag size={18} />
-                <span>Promo & Kupon Diskon</span>
-              </Link>
-              <Link to="/kalkulator" className={`mobile-nav-item ${location.pathname === '/kalkulator' ? 'active' : ''}`} onClick={closeMobileMenu}>
-                <IconCalculator size={18} />
-                <span>Kalkulator Diamond</span>
-              </Link>
+            {/* Mobile Auth/Balance Info */}
+            <div className="mobile-drawer-auth-box">
+              {isAuthenticated ? (
+                <div className="mobile-user-card">
+                  <div className="profile-avatar-circle">
+                    <span>{userInitial}</span>
+                  </div>
+                  <div className="mobile-user-details">
+                    <span className="mobile-user-name">{user?.name || user?.username}</span>
+                    <span className="mobile-user-balance">Saldo: {formatRupiah(user?.saldo || 0)}</span>
+                  </div>
+                </div>
+              ) : (
+                <div className="mobile-auth-actions">
+                  <button
+                    type="button"
+                    className="btn-auth-login"
+                    style={{ flex: 1 }}
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      onOpenAuth('login');
+                    }}
+                  >
+                    Masuk
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-auth-register"
+                    style={{ flex: 1 }}
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      onOpenAuth('register');
+                    }}
+                  >
+                    Daftar
+                  </button>
+                </div>
+              )}
             </div>
+
+            <ul className="mobile-nav-list">
+              {navLinks.map((link) => (
+                <li key={link.path}>
+                  <Link
+                    to={link.path}
+                    className={`mobile-nav-item ${location.pathname === link.path ? 'active' : ''}`}
+                  >
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
+              {isAuthenticated && (
+                <li>
+                  <Link to="/profile" className="mobile-nav-item">
+                    Profil & Akun
+                  </Link>
+                </li>
+              )}
+            </ul>
 
             <div className="mobile-drawer-footer">
-              <div className="mobile-wallet-box">
-                <div>
-                  <span className="mobile-wallet-label">Saldo Akun Anda:</span>
-                  <div className="mobile-wallet-val">{formatRupiah(user?.saldo)}</div>
-                </div>
+              <button
+                type="button"
+                className="btn-theme-toggle-mobile"
+                onClick={toggleTheme}
+              >
+                {resolvedTheme === 'dark' ? <IconSun size={16} /> : <IconMoon size={16} />}
+                <span>Mode {resolvedTheme === 'dark' ? 'Terang' : 'Gelap'}</span>
+              </button>
+
+              {isAuthenticated && (
                 <button
                   type="button"
+                  className="btn-logout-mobile"
                   onClick={() => {
-                    closeMobileMenu();
-                    onOpenTopUpModal();
+                    logout();
+                    setMobileMenuOpen(false);
                   }}
-                  className="btn-solid"
-                  style={{ padding: '0.5rem 1rem', fontSize: '0.8rem' }}
                 >
-                  <IconPlus size={14} />
-                  <span>Isi Saldo</span>
+                  <IconLogOut size={16} />
+                  <span>Keluar dari Akun</span>
                 </button>
-              </div>
+              )}
             </div>
           </div>
-        )}
-      </header>
+        </div>
+      )}
 
-      {/* Mobile Sticky Bottom Navigation */}
-      <nav className="mobile-bottom-nav">
+      {/* Mobile Bottom Navigation Bar (Thumb Friendly) */}
+      <nav className="mobile-bottom-nav" aria-label="Navigasi Bawah">
         <Link to="/" className={`bottom-nav-item ${location.pathname === '/' ? 'active' : ''}`}>
-          <IconGamepad size={20} />
-          <span>Home</span>
+          <IconGamepad size={18} />
+          <span>Beranda</span>
         </Link>
-        <button
-          type="button"
-          className="bottom-nav-item"
-          onClick={onOpenSearchModal}
-        >
-          <IconSearch size={20} />
+        <button type="button" className="bottom-nav-item" onClick={onOpenSearch}>
+          <IconSearch size={18} />
           <span>Cari</span>
         </button>
-        <Link to="/cek-transaksi" className={`bottom-nav-item ${location.pathname === '/cek-transaksi' ? 'active' : ''}`}>
-          <IconShield size={20} />
-          <span>Cek Order</span>
-        </Link>
-        <Link to="/transaksi" className={`bottom-nav-item ${location.pathname.startsWith('/transaksi') && location.pathname !== '/cek-transaksi' ? 'active' : ''}`}>
-          <IconHistory size={20} />
-          <span>Riwayat</span>
-        </Link>
-        <button
-          type="button"
-          className="bottom-nav-item"
-          onClick={onOpenTopUpModal}
-        >
-          <IconPlus size={20} />
+        <button type="button" className="bottom-nav-item highlight" onClick={onOpenTopUp}>
+          <IconPlus size={18} />
           <span>Isi Saldo</span>
         </button>
+        <Link to="/transaksi" className={`bottom-nav-item ${location.pathname.startsWith('/transaksi') ? 'active' : ''}`}>
+          <IconHistory size={18} />
+          <span>Pesanan</span>
+        </Link>
+        {isAuthenticated ? (
+          <Link to="/profile" className={`bottom-nav-item ${location.pathname === '/profile' ? 'active' : ''}`}>
+            <IconUser size={18} />
+            <span>Akun</span>
+          </Link>
+        ) : (
+          <button type="button" className="bottom-nav-item" onClick={() => onOpenAuth('login')}>
+            <IconUser size={18} />
+            <span>Masuk</span>
+          </button>
+        )}
       </nav>
-    </>
+    </header>
   );
 };

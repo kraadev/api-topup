@@ -44,21 +44,48 @@ func TestHandleCreateUser(t *testing.T) {
 
 	handler := routes.SetupRouter(db)
 
-	rows := sqlmock.NewRows([]string{"id", "username", "saldo", "created_at"}).
-		AddRow(1, "steaven", 50000, time.Now())
+	rows := sqlmock.NewRows([]string{"id", "username", "name", "email", "saldo", "created_at"}).
+		AddRow(1, "steaven", "steaven", "steaven@test.com", 50000, time.Now())
 
-	mock.ExpectQuery(regexp.QuoteMeta("INSERT INTO users (username, saldo) VALUES ($1, $2)")).
-		WithArgs("steaven", int64(50000)).
+	mock.ExpectQuery(regexp.QuoteMeta("INSERT INTO users (username, name, email, password, saldo) VALUES ($1, $2, $3, $4, $5)")).
+		WithArgs("steaven", "steaven", "steaven@test.com", "", int64(50000)).
 		WillReturnRows(rows)
 
-	body := `{"username": "steaven", "saldo": 50000}`
-	req := httptest.NewRequest(http.MethodPost, "/users", bytes.NewBufferString(body))
+	body := `{"username": "steaven", "email": "steaven@test.com", "saldo": 50000}`
+	req := httptest.NewRequest(http.MethodPost, "/auth/register", bytes.NewBufferString(body))
 	w := httptest.NewRecorder()
 
 	handler.ServeHTTP(w, req)
 
 	if w.Code != http.StatusCreated {
 		t.Fatalf("expected 201 Created, got %d: %s", w.Code, w.Body.String())
+	}
+}
+
+func TestHandleLogin(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	defer db.Close()
+
+	handler := routes.SetupRouter(db)
+
+	rows := sqlmock.NewRows([]string{"id", "username", "name", "email", "password", "avatar_url", "saldo", "created_at"}).
+		AddRow(1, "steaven", "Steaven", "steaven@test.com", "secret123", "", 100000, time.Now())
+
+	mock.ExpectQuery(regexp.QuoteMeta("SELECT id, username, COALESCE(name, ''), COALESCE(email, ''), COALESCE(password, ''), COALESCE(avatar_url, ''), saldo, created_at FROM users WHERE LOWER(email) = $1 OR LOWER(username) = $1;")).
+		WithArgs("steaven@test.com").
+		WillReturnRows(rows)
+
+	body := `{"email": "steaven@test.com", "password": "secret123"}`
+	req := httptest.NewRequest(http.MethodPost, "/auth/login", bytes.NewBufferString(body))
+	w := httptest.NewRecorder()
+
+	handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200 OK, got %d: %s", w.Code, w.Body.String())
 	}
 }
 

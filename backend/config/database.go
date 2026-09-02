@@ -127,9 +127,21 @@ func AutoMigrate(db *sql.DB) error {
 	CREATE TABLE IF NOT EXISTS users (
 		id SERIAL PRIMARY KEY,
 		username VARCHAR(100) NOT NULL UNIQUE,
+		name VARCHAR(100) DEFAULT '',
+		email VARCHAR(255) UNIQUE,
+		password VARCHAR(255) DEFAULT '',
+		google_id VARCHAR(255) DEFAULT '',
+		avatar_url VARCHAR(255) DEFAULT '',
 		saldo BIGINT NOT NULL DEFAULT 0 CHECK (saldo >= 0),
 		created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 	);
+
+	-- Tambahkan kolom jika belum ada (untuk database yang sudah berjalan sebelumnya)
+	ALTER TABLE users ADD COLUMN IF NOT EXISTS name VARCHAR(100) DEFAULT '';
+	ALTER TABLE users ADD COLUMN IF NOT EXISTS email VARCHAR(255);
+	ALTER TABLE users ADD COLUMN IF NOT EXISTS password VARCHAR(255) DEFAULT '';
+	ALTER TABLE users ADD COLUMN IF NOT EXISTS google_id VARCHAR(255) DEFAULT '';
+	ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url VARCHAR(255) DEFAULT '';
 
 	CREATE TABLE IF NOT EXISTS orders (
 		id SERIAL PRIMARY KEY,
@@ -140,7 +152,17 @@ func AutoMigrate(db *sql.DB) error {
 		created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 	);
 
+	CREATE TABLE IF NOT EXISTS otps (
+		id SERIAL PRIMARY KEY,
+		email VARCHAR(255) NOT NULL,
+		otp_code VARCHAR(10) NOT NULL,
+		expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+		used BOOLEAN NOT NULL DEFAULT FALSE,
+		created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+	);
+
 	CREATE INDEX IF NOT EXISTS idx_orders_user_id ON orders(user_id);
+	CREATE INDEX IF NOT EXISTS idx_otps_email ON otps(email);
 	`
 
 	_, err := db.Exec(schemaQuery)
@@ -148,7 +170,7 @@ func AutoMigrate(db *sql.DB) error {
 		return err
 	}
 
-	log.Println("✅ Skema database & tabel (users, orders) siap digunakan!")
+	log.Println("✅ Skema database & tabel (users, orders, otps) siap digunakan!")
 	return nil
 }
 

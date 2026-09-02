@@ -18,7 +18,17 @@ func SetupRouter(db *sql.DB) http.Handler {
 	orderHandler := handlers.NewOrderHandler(db)
 
 	// ==========================================
-	// 1. Routes User
+	// 1. Routes Autentikasi & Akun
+	// ==========================================
+	mux.HandleFunc("/auth/register", userHandler.CreateUser)
+	mux.HandleFunc("/auth/login", userHandler.Login)
+	mux.HandleFunc("/auth/google", userHandler.GoogleLogin)
+	mux.HandleFunc("/auth/forgot-password", userHandler.ForgotPassword)
+	mux.HandleFunc("/auth/verify-otp", userHandler.VerifyOTP)
+	mux.HandleFunc("/auth/reset-password", userHandler.ResetPassword)
+
+	// ==========================================
+	// 2. Routes User & Saldo Dompet
 	// ==========================================
 	mux.HandleFunc("/users/register", userHandler.CreateUser)
 	mux.HandleFunc("/users/saldo", userHandler.UpdateSaldo)
@@ -40,7 +50,7 @@ func SetupRouter(db *sql.DB) http.Handler {
 	mux.HandleFunc("/users/", userHandler.GetUser)
 
 	// ==========================================
-	// 2. Routes Order
+	// 3. Routes Order & Transaksi
 	// ==========================================
 	mux.HandleFunc("/orders", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {

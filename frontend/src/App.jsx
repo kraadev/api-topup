@@ -1,9 +1,12 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { ThemeProvider } from './context/ThemeContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
 import { TopUpModal } from './components/TopUpModal';
 import { SearchModal } from './components/SearchModal';
+import { AuthModal } from './components/auth/AuthModal';
 import { HomePage } from './pages/HomePage';
 import { GameDetailPage } from './pages/GameDetailPage';
 import { InvoicePage } from './pages/InvoicePage';
@@ -11,34 +14,21 @@ import { OrderHistoryPage } from './pages/OrderHistoryPage';
 import { CheckTransactionPage } from './pages/CheckTransactionPage';
 import { CalculatorPage } from './pages/CalculatorPage';
 import { PromoPage } from './pages/PromoPage';
-import { userService } from './services/userService';
+import { ProfilePage } from './pages/ProfilePage';
 import { orderService } from './services/orderService';
 import './index.css';
 
-export default function App() {
-  const [user, setUser] = useState(null);
-  const [loadingUser, setLoadingUser] = useState(true);
+function AppContent() {
+  const { user, topUpSaldo, refreshUser } = useAuth();
   const [isTopUpModalOpen, setIsTopUpModalOpen] = useState(false);
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [authModalView, setAuthModalView] = useState('login');
 
-  // Ambil data user dari backend Golang (default ID 1)
-  const fetchUserData = useCallback(async () => {
-    setLoadingUser(true);
-    try {
-      const response = await userService.getUserById(1);
-      const userData = response.data || response;
-      setUser(userData);
-    } catch (err) {
-      console.warn('Backend belum terkoneksi, menggunakan state lokal:', err.message);
-      setUser((prev) => prev || { id: 1, username: 'player_one', saldo: 100000 });
-    } finally {
-      setLoadingUser(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchUserData();
-  }, [fetchUserData]);
+  const handleOpenAuth = (view = 'login') => {
+    setAuthModalView(view);
+    setAuthModalOpen(true);
+  };
 
   // Global Keyboard Shortcut: Ctrl+K or Cmd+K to open Search Palette
   useEffect(() => {
@@ -55,16 +45,9 @@ export default function App() {
   // Handler Top Up Saldo Dompet
   const handleTopUp = async (amount) => {
     try {
-      await userService.topUpSaldo(user?.id || 1, amount);
-      await fetchUserData();
+      await topUpSaldo(amount);
     } catch (err) {
-      setUser((prev) => ({
-        ...prev,
-        saldo: (prev?.saldo || 0) + Number(amount),
-      }));
-      if (err.message !== 'Failed to fetch' && !err.message.includes('Network Error')) {
-        throw err;
-      }
+      console.warn('Top-up saldo error:', err.message);
     }
   };
 
@@ -75,18 +58,18 @@ export default function App() {
     if (isWallet) {
       // Jika bayar menggunakan Saldo Dompet -> Potong saldo via backend Golang
       const response = await orderService.createOrder({
-        userId: orderPayload.userId,
+        userId: orderPayload.userId || user?.id || 1,
         item: orderPayload.item,
         harga: orderPayload.harga,
       });
-      await fetchUserData();
+      await refreshUser();
       return response;
     } else {
       // Jika bayar menggunakan Virtual Account (BCA/Mandiri/BRI/BNI) atau QRIS
       const newOrderId = Math.floor(100000 + Math.random() * 900000);
       const pendingOrder = {
         id: newOrderId,
-        user_id: orderPayload.userId,
+        user_id: orderPayload.userId || user?.id || 1,
         item: orderPayload.item,
         harga: orderPayload.harga,
         status: 'Pending',
@@ -98,78 +81,106 @@ export default function App() {
   };
 
   return (
-    <BrowserRouter>
-      <div className="app-layout">
-        {/* Main Navbar */}
-        <Navbar
-          user={user}
-          onOpenTopUpModal={() => setIsTopUpModalOpen(true)}
-          onOpenSearchModal={() => setIsSearchModalOpen(true)}
-        />
+    <div className="app-layout">
+      {/* Main Navbar */}
+      <Navbar
+        onOpenTopUp={() => setIsTopUpModalOpen(true)}
+        onOpenSearch={() => setIsSearchModalOpen(true)}
+        onOpenAuth={handleOpenAuth}
+      />
 
-        {/* Dynamic Page Routes */}
-        <div className="main-content-container">
-          <Routes>
-            {/* 1. Halaman Utama / Katalog Game */}
-            <Route
-              path="/"
-              element={
-                <HomePage
-                  user={user}
-                  onOpenSearchModal={() => setIsSearchModalOpen(true)}
-                />
-              }
-            />
+      {/* Dynamic Page Routes */}
+      <main className="main-content-container">
+        <Routes>
+          {/* 1. Halaman Utama / Katalog Game */}
+          <Route
+            path="/"
+            element={
+              <HomePage
+                user={user}
+                onOpenSearchModal={() => setIsSearchModalOpen(true)}
+              />
+            }
+          />
 
-            {/* 2. Halaman Top-Up Per Game */}
-            <Route
-              path="/game/:gameId"
-              element={
-                <GameDetailPage
-                  user={user}
-                  onOrderSubmit={handleOrderSubmit}
-                  onOpenTopUpModal={() => setIsTopUpModalOpen(true)}
-                />
-              }
-            />
+          {/* 2. Halaman Top-Up Per Game */}
+          <Route
+            path="/game/:gameId"
+            element={
+              <GameDetailPage
+                user={user}
+                onOrderSubmit={handleOrderSubmit}
+                onOpenTopUpModal={() => setIsTopUpModalOpen(true)}
+              />
+            }
+          />
 
-            {/* 3. Halaman Detail Transaksi / Invoice */}
-            <Route path="/transaksi/:orderId" element={<InvoicePage />} />
+          {/* 3. Halaman Detail Transaksi / Invoice */}
+          <Route path="/transaksi/:orderId" element={<InvoicePage />} />
 
-            {/* 4. Halaman Riwayat Transaksi Lengkap */}
-            <Route path="/transaksi" element={<OrderHistoryPage userId={user?.id || 1} />} />
+          {/* 4. Halaman Riwayat Transaksi Lengkap */}
+          <Route path="/transaksi" element={<OrderHistoryPage userId={user?.id || 1} />} />
 
-            {/* 5. Halaman Lacak / Cek Pesanan */}
-            <Route path="/cek-transaksi" element={<CheckTransactionPage />} />
+          {/* 5. Halaman Lacak / Cek Pesanan */}
+          <Route path="/cek-transaksi" element={<CheckTransactionPage />} />
 
-            {/* 6. Halaman Kalkulator Gaming */}
-            <Route path="/kalkulator" element={<CalculatorPage />} />
+          {/* 6. Halaman Kalkulator Gaming */}
+          <Route path="/kalkulator" element={<CalculatorPage />} />
 
-            {/* 7. Halaman Promo & Kupon Diskon */}
-            <Route path="/promo" element={<PromoPage />} />
+          {/* 7. Halaman Promo & Kupon Diskon */}
+          <Route path="/promo" element={<PromoPage />} />
 
-            {/* Fallback route */}
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </div>
+          {/* 8. Halaman Profil & Pengaturan Akun */}
+          <Route
+            path="/profile"
+            element={
+              <ProfilePage
+                onOpenTopUp={() => setIsTopUpModalOpen(true)}
+                onOpenAuth={handleOpenAuth}
+              />
+            }
+          />
 
-        {/* Footer */}
-        <Footer />
+          {/* Fallback route */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </main>
 
-        {/* Modal Top Up Saldo Akun */}
-        <TopUpModal
-          isOpen={isTopUpModalOpen}
-          onClose={() => setIsTopUpModalOpen(false)}
-          user={user}
-          onTopUp={handleTopUp}
-        />
+      {/* Footer */}
+      <Footer />
 
-        {/* Modal Command Palette Search */}
-        <SearchModal
-          isOpen={isSearchModalOpen}
-          onClose={() => setIsSearchModalOpen(false)}
-        />
-      </div>
-    </BrowserRouter>
+      {/* Modal Top Up Saldo Akun */}
+      <TopUpModal
+        isOpen={isTopUpModalOpen}
+        onClose={() => setIsTopUpModalOpen(false)}
+        user={user}
+        onTopUp={handleTopUp}
+      />
+
+      {/* Modal Command Palette Search */}
+      <SearchModal
+        isOpen={isSearchModalOpen}
+        onClose={() => setIsSearchModalOpen(false)}
+      />
+
+      {/* Modal Autentikasi (Login / Register / OTP / Reset) */}
+      <AuthModal
+        isOpen={authModalOpen}
+        onClose={() => setAuthModalOpen(false)}
+        initialView={authModalView}
+      />
+    </div>
+  );
+}
+
+export default function App() {
+  return (
+    <ThemeProvider>
+      <AuthProvider>
+        <BrowserRouter>
+          <AppContent />
+        </BrowserRouter>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
